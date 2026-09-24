@@ -192,35 +192,6 @@
   .custom-ratio span { color: #8a8b91; font-weight: 600; }
   .custom-ratio label { font-size: 0.8rem; color: #6b6c72; }
 
-
-  .switch-row .label-main { font-size: 0.9rem; font-weight: 500; color: #2c2d31; }
-  .switch-row .label-sub { font-size: 0.78rem; color: #7a7b81; margin-top: 2px; }
-  .switch {
-    position: relative;
-    width: 46px; height: 28px;
-    flex-shrink: 0;
-  }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .switch .track {
-    position: absolute; inset: 0;
-    background: rgba(120,120,128,0.28);
-    border-radius: 999px;
-    transition: background .2s;
-    cursor: pointer;
-  }
-  .switch .track::before {
-    content: '';
-    position: absolute;
-    width: 24px; height: 24px;
-    left: 2px; top: 2px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-    transition: transform .2s;
-  }
-  .switch input:checked + .track { background: linear-gradient(135deg, #6ea8ff, #c58aff); }
-  .switch input:checked + .track::before { transform: translateX(18px); }
-
   .top-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
   .btn {
@@ -434,17 +405,6 @@
       </div>
     </div>
 
-    <div class="switch-row">
-      <div>
-        <div class="label-main">Chevauchement léger</div>
-        <div class="label-sub">Évite de couper un sujet pile au milieu</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="addOverlap">
-        <span class="track"></span>
-      </label>
-    </div>
-
     <div class="top-actions">
       <button class="btn ghost" id="resetBtn">↺ Changer d'image</button>
     </div>
@@ -481,7 +441,6 @@ const ratioSeg = document.getElementById('ratioSeg');
 const customRatioRow = document.getElementById('customRatioRow');
 const customW = document.getElementById('customW');
 const customH = document.getElementById('customH');
-const addOverlapChk = document.getElementById('addOverlap');
 const resetBtn = document.getElementById('resetBtn');
 const hint = document.getElementById('hint');
 const downloadAllWrap = document.getElementById('downloadAllWrap');
@@ -531,7 +490,6 @@ ratioSeg.addEventListener('click', e => {
 
 customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
 customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
-addOverlapChk.addEventListener('change', renderSplits);
 
 function handleFile(file) {
   if (!file || !file.type || !file.type.startsWith('image/')) return;
@@ -600,17 +558,15 @@ function renderSplits() {
 
   const n = pieceCount;
   const targetRatio = getTargetRatio();
-  const overlap = addOverlapChk.checked ? 0.04 : 0;
 
   const workingCanvas = getWorkingCanvas(targetRatio, n);
   const W = workingCanvas.width;
   const H = workingCanvas.height;
   const baseSliceW = W / n;
-  const overlapPx = Math.round(baseSliceW * overlap);
 
   for (let i = 0; i < n; i++) {
-    let sx = Math.round(i * baseSliceW) - overlapPx;
-    let sw = Math.round(baseSliceW) + overlapPx * 2;
+    let sx = Math.round(i * baseSliceW);
+    let sw = Math.round(baseSliceW);
     sx = Math.max(0, sx);
     sw = Math.min(W - sx, sw);
 
@@ -653,7 +609,7 @@ function renderSplits() {
     const label = ratioMode === 'custom' ? `${customW.value}:${customH.value}` : activeBtn.textContent;
     ratioLabel = `recadré en ${label}`;
   }
-  hint.textContent = `Chaque morceau fait ${Math.round(baseSliceW + overlapPx*2)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
+  hint.textContent = `Chaque morceau fait ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
 }
 
 // ---------- Simulation carrousel (swipe) ----------
