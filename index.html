@@ -5,204 +5,439 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Luchiaro.splitt</title>
 
-<!-- PWA: installable on iPhone (Safari → Partager → Sur l'écran d'accueil) and on Mac (Chrome/Edge → Installer) -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#131C22">
-<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#eef1f6">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Splitt Pro">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Luchiaro.splitt">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg: #131C22;
-    --panel: #243970;
-    --ink: #FFFFFF;
-    --muted: #B9D4E8;
-    --line: rgba(220, 245, 255, 0.15);
-    --glass: rgba(36, 57, 112, 0.65);
-    --glass-strong: rgba(36, 57, 112, 0.95);
-    --accent-a: #5D9CCA;
-    --accent-b: #FB9B03;
-    --text-dark: #131C22;
-  }
-
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
-  body { margin: 0; font-family: 'Poppins', sans-serif; color: var(--ink); min-height: 100vh; padding: 40px 18px 80px; overflow-x: hidden; position: relative; background: var(--bg); }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1c1c1e;
+    min-height: 100vh;
+    padding: 40px 18px 80px;
+    overflow-x: hidden;
+    position: relative;
+    background: #eef1f6;
+  }
 
-  .ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-  .ambient::after{ content:''; position:absolute; inset:0; background-image: radial-gradient(rgba(220, 245, 255, 0.08) 1px, transparent 1px); background-size: 4px 4px; opacity: 0.8; }
-  .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.4; will-change: transform; }
-  .blob.b1 { width: 560px; height: 560px; background: var(--accent-a); top: -180px; left: -160px; animation: float1 26s ease-in-out infinite; }
-  .blob.b2 { width: 480px; height: 480px; background: var(--panel); bottom: -160px; right: -140px; animation: float2 30s ease-in-out infinite; }
+  /* ---------- Ambient liquid background ---------- */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .blob.b1 { width: 480px; height: 480px; background: #ff8a8a; top: -140px; left: -120px; animation: float1 22s ease-in-out infinite; }
+  .blob.b2 { width: 420px; height: 420px; background: #6ea8ff; top: 20%; right: -160px; animation: float2 26s ease-in-out infinite; }
+  .blob.b3 { width: 380px; height: 380px; background: #c58aff; bottom: -120px; left: 10%; animation: float3 24s ease-in-out infinite; }
+  .blob.b4 { width: 320px; height: 320px; background: #5ce0d0; bottom: 5%; right: 8%; animation: float1 30s ease-in-out infinite reverse; }
 
-  @keyframes float1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px, 30px) scale(1.08); } }
-  @keyframes float2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-40px, -30px) scale(0.95); } }
-  @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
+  @keyframes float1 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, 30px) scale(1.08); }
+  }
+  @keyframes float2 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-50px, 40px) scale(0.95); }
+  }
+  @keyframes float3 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(30px, -40px) scale(1.1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none !important; }
+  }
 
   .content { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
 
+  /* ---------- Header / wordmark ---------- */
   header { text-align: center; margin-bottom: 34px; }
-  .wordmark { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
-  .wordmark .dot { color: var(--accent-b); }
-  .tagline { margin-top: 6px; font-size: 0.94rem; color: var(--muted); font-weight: 400; }
-  .badge-p3 { display: inline-flex; align-items: center; gap: 6px; background: rgba(93, 156, 202, 0.15); border: 1px solid var(--line); color: var(--muted); padding: 4px 12px; border-radius: 999px; font-size: 0.76rem; font-weight: 500; margin-top: 10px; }
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1c1c1e;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+  .wordmark .dot {
+    color: transparent;
+    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    font-weight: 700;
+  }
+  .tagline {
+    margin-top: 6px;
+    font-size: 0.94rem;
+    color: #55565c;
+    font-weight: 500;
+  }
 
-  .glass { background: var(--glass); backdrop-filter: blur(28px) saturate(160%); -webkit-backdrop-filter: blur(28px) saturate(160%); border: 1px solid rgba(220,245,255,0.15); border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  /* ---------- Glass panel base ---------- */
+  .glass {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 26px;
+    box-shadow:
+      0 8px 32px rgba(31, 41, 60, 0.10),
+      inset 0 1px 0 rgba(255,255,255,0.8);
+  }
 
-  .dropzone { display: block; padding: 56px 24px; text-align: center; cursor: pointer; transition: transform .2s ease, border .2s ease; border: 2px dashed var(--accent-a); }
-  .dropzone:hover { transform: translateY(-2px); border-color: var(--accent-b); }
-  .dropzone.drag { box-shadow: 0 0 0 3px rgba(251,155,3,0.35); border-color: var(--accent-b); }
-  .dropzone .icon { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 16px; background: var(--accent-b); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(251,155,3,0.28); }
-  .dropzone .icon svg { width: 24px; height: 24px; stroke: var(--text-dark); }
-  .dropzone strong { display: block; font-size: 1.02rem; font-weight: 600; color: var(--ink); }
-  .dropzone p { margin: 8px 0 0; color: var(--muted); font-size: 0.86rem; }
-  .file-input-safe { opacity: 0; width: 0.1px; height: 0.1px; position: absolute; z-index: -1; }
+  /* ---------- Dropzone ---------- */
+  .dropzone {
+    padding: 56px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .dropzone:hover { transform: translateY(-2px); }
+  .dropzone.drag {
+    box-shadow: 0 0 0 3px rgba(110,168,255,0.5), 0 8px 32px rgba(31,41,60,0.12);
+  }
+  .dropzone .icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(110,168,255,0.35);
+  }
+  .dropzone .icon svg { width: 26px; height: 26px; }
+  .dropzone strong { font-size: 1.05rem; font-weight: 600; }
+  .dropzone p { margin: 8px 0 0; color: #6b6c72; font-size: 0.88rem; }
+  input[type=file] { display: none; }
 
-  .panel { padding: 26px 26px 28px; margin-top: 18px; }
-  .panel-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-a); margin-bottom: 12px; }
-  .panel-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  /* ---------- Panels ---------- */
+  .panel {
+    padding: 22px 22px 24px;
+    margin-top: 18px;
+  }
+  .panel-title {
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7a7b81;
+    margin-bottom: 12px;
+  }
 
-  .segmented { display: flex; background: var(--bg); border-radius: 14px; padding: 4px; gap: 4px; border: 1px solid var(--line); flex-wrap: wrap; }
-  .segmented button { flex: 1 1 auto; border: none; background: transparent; padding: 10px 8px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; font-family: inherit; }
-  .segmented button:hover:not(.active) { color: var(--ink); }
-  .segmented button.active { background: var(--accent-b); color: var(--text-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  /* segmented control */
+  .segmented {
+    display: flex;
+    background: rgba(120,120,128,0.12);
+    border-radius: 14px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .segmented button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 9px 10px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #48494e;
+    cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .segmented button.active {
+    background: #ffffff;
+    color: #1c1c1e;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
 
-  .row-gap { margin-top: 24px; }
-  .custom-ratio { display: none; align-items: center; gap: 10px; margin-top: 14px; }
+  .row-gap { margin-top: 20px; }
+
+  .custom-ratio {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
   .custom-ratio.show { display: flex; }
-  .custom-ratio input { width: 68px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--accent-a); background: var(--bg); color: var(--ink); font-size: 0.9rem; text-align: center; font-family: inherit; }
-  .custom-ratio input:focus { outline: 2px solid var(--accent-b); outline-offset: 2px; }
-  .custom-ratio span { color: var(--muted); font-weight: 600; }
-  .custom-ratio label { font-size: 0.8rem; color: var(--muted); }
+  .custom-ratio input {
+    width: 72px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.7);
+    font-size: 0.9rem;
+    text-align: center;
+    font-family: inherit;
+  }
+  .custom-ratio span { color: #8a8b91; font-weight: 600; }
+  .custom-ratio label { font-size: 0.8rem; color: #6b6c72; }
 
-  .switch-row { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
-  .switch-row .label-main { font-size: 0.95rem; font-weight: 500; color: var(--ink); }
-  .switch-row .label-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
-  .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+  /* toggle switch */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+  }
+  .switch-row .label-main { font-size: 0.9rem; font-weight: 500; color: #2c2d31; }
+  .switch-row .label-sub { font-size: 0.78rem; color: #7a7b81; margin-top: 2px; }
+  .switch {
+    position: relative;
+    width: 46px; height: 28px;
+    flex-shrink: 0;
+  }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .switch .track { position: absolute; inset: 0; background: rgba(220, 245, 255, 0.15); border-radius: 999px; transition: background .2s; cursor: pointer; }
-  .switch .track::before { content: ''; position: absolute; width: 24px; height: 24px; left: 2px; top: 2px; background: var(--ink); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: transform .2s; }
-  .switch input:checked + .track { background: var(--accent-a); }
-  .switch input:checked + .track::before { transform: translateX(20px); background: var(--ink); }
+  .switch .track {
+    position: absolute; inset: 0;
+    background: rgba(120,120,128,0.28);
+    border-radius: 999px;
+    transition: background .2s;
+    cursor: pointer;
+  }
+  .switch .track::before {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    left: 2px; top: 2px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    transition: transform .2s;
+  }
+  .switch input:checked + .track { background: linear-gradient(135deg, #6ea8ff, #c58aff); }
+  .switch input:checked + .track::before { transform: translateX(18px); }
 
-  .top-actions { display: flex; justify-content: flex-end; margin-top: 24px; }
+  .top-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
-  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 12px 20px; border-radius: 14px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: transform .1s, box-shadow .15s, filter .15s, background .15s; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 18px;
+    border-radius: 14px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .1s, box-shadow .15s, filter .15s;
+  }
   .btn:active { transform: scale(0.97); }
-  .btn.ghost { background: rgba(93, 156, 202, 0.15); color: var(--muted); border: 1px solid rgba(93, 156, 202, 0.3); }
-  .btn.ghost:hover { background: rgba(93, 156, 202, 0.25); color: var(--ink); }
-  .btn.primary { background: var(--accent-b); color: var(--text-dark); box-shadow: 0 6px 16px rgba(251,155,3,0.25); }
-  .btn.primary:hover { filter: brightness(1.1); box-shadow: 0 8px 20px rgba(251,155,3,0.35); }
-  .btn.wide { width: 100%; justify-content: center; padding: 16px; font-size: 1rem; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.ghost {
+    background: rgba(120,120,128,0.14);
+    color: #3a3b3f;
+  }
+  .btn.ghost:hover { background: rgba(120,120,128,0.22); }
+  .btn.primary {
+    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
+    color: white;
+    box-shadow: 0 6px 18px rgba(110,168,255,0.35);
+  }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.wide { width: 100%; justify-content: center; padding: 15px; font-size: 0.96rem; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-  .original-wrap { margin-top: 18px; padding: 18px; text-align: center; }
-  .filename-tag { font-size: 0.9rem; color: var(--ink); font-weight: 500; margin-bottom: 12px; }
-  .thumb-strip { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  .thumb { width: 60px; height: 60px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); flex-shrink: 0; }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* ---------- Original preview ---------- */
+  .original-wrap { margin-top: 18px; padding: 14px; text-align: center; }
+  .original-wrap img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 16px;
+    display: block;
+    margin: 0 auto;
+  }
+  .filename-tag {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: #7a7b81;
+    font-weight: 500;
+  }
 
-  .download-all { margin-top: 24px; }
-  .preview-row { display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
-  .card { flex: 1 1 210px; padding: 16px; text-align: center; position: relative; background: var(--glass-strong); display: flex; flex-direction: column; }
-  .card:not(:first-child)::before { content: ''; position: absolute; left: -9px; top: 10px; bottom: 10px; width: 1px; background-image: radial-gradient(circle, var(--accent-a) 1.5px, transparent 1.6px); background-size: 100% 12px; background-repeat: repeat-y; opacity: 0.5; }
-  .frame-num { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; color: var(--accent-b); margin-bottom: 12px; text-align: left; }
-  .card img { max-width: 100%; border-radius: 8px; display: block; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-  .card .dims { font-size: 0.75rem; color: var(--ink); margin-bottom: 16px; font-weight: 500; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px; display: inline-block; }
-  .card .btn { margin-top: auto; width: 100%; justify-content: center; font-size: 0.85rem; padding: 10px; }
+  /* ---------- Results ---------- */
+  .download-all { margin-top: 20px; }
 
-  .hint { margin-top: 20px; padding: 18px 20px; }
-  .hint-title { font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
-  .hint-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .hint-list li { font-size: 0.82rem; color: var(--muted); line-height: 1.5; padding-left: 20px; position: relative; }
-  .hint-list li.ok::before { content: '✓'; position: absolute; left: 0; color: var(--accent-a); font-weight: 700; }
-  .hint-list li.info::before { content: '–'; position: absolute; left: 2px; color: var(--muted); font-weight: 700; }
+  .preview-row {
+    display: flex;
+    gap: 14px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .card {
+    flex: 1 1 210px;
+    padding: 12px;
+    text-align: center;
+  }
+  .card img {
+    max-width: 100%;
+    border-radius: 12px;
+    display: block;
+    margin: 0 auto 10px;
+  }
+  .card .dims { font-size: 0.76rem; color: #7a7b81; margin-bottom: 10px; font-weight: 500; }
+
+  /* ---------- Simulation carrousel (swipe) ---------- */
+  .carousel-panel {
+    padding: 22px;
+    margin-top: 18px;
+  }
+  .carousel-phone {
+    max-width: 300px;
+    margin: 4px auto 0;
+    border-radius: 22px;
+    overflow: hidden;
+    position: relative;
+    background: #0c0c0e;
+    aspect-ratio: 4 / 5;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  }
+  .carousel {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* Edge legacy / IE */
+  }
+  .carousel::-webkit-scrollbar { display: none; } /* Chrome / Safari / Edge Chromium */
+  .carousel .slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .carousel .slide img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+  .carousel-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none;
+  }
+  .carousel-dots .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+    transition: background .2s, transform .2s;
+  }
+  .carousel-dots .dot.active { background: #ffffff; transform: scale(1.35); }
+  .carousel-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #7a7b81;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+
+  .hint {
+    margin-top: 20px;
+    font-size: 0.82rem;
+    color: #5a5b60;
+    line-height: 1.55;
+    padding: 15px 17px;
+  }
   .hidden { display: none !important; }
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(19,28,34,.3); border-top-color: var(--text-dark); border-radius: 50%; animation: spin .7s linear infinite; }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .instagram-btn {
-    position: fixed; bottom: 24px; right: 24px; display: flex; align-items: center; gap: 8px;
-    padding: 12px 18px; background: var(--glass-strong); color: var(--muted); text-decoration: none;
-    font-weight: 600; font-size: 0.85rem; border-radius: 99px; border: 1px solid var(--line);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    transition: all 0.2s ease; z-index: 100;
+  @media (max-width: 480px) {
+    .wordmark { font-size: 1.7rem; }
   }
-  .instagram-btn:hover { background: var(--accent-b); color: var(--text-dark); border-color: var(--accent-b); transform: translateY(-3px); box-shadow: 0 10px 25px rgba(251,155,3,0.35); }
-  .instagram-btn svg { width: 20px; height: 20px; }
-  @media (max-width: 768px) { .wordmark { font-size: 1.9rem; } .instagram-btn { bottom: 16px; right: 16px; padding: 10px; } .instagram-btn span { display: none; } }
 </style>
 </head>
 <body>
 
-<div class="ambient"><div class="blob b1"></div><div class="blob b2"></div></div>
-
-<a href="https://www.instagram.com/luchia.raw/" target="_blank" rel="noopener noreferrer" class="instagram-btn" aria-label="Visiter mon Instagram">
-  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-  <span>@luchia.raw</span>
-</a>
+<div class="ambient">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+</div>
 
 <div class="content">
   <header>
     <div class="wordmark">Luchiaro<span class="dot">.</span>splitt</div>
-    <div class="tagline">Divisez vos photos en plusieurs portraits, sans compromis sur la qualité.</div>
-    <div class="badge-p3">Traitement 100% local — vos photos ne quittent jamais votre appareil</div>
+    <div class="tagline">Découpe tes photos en portraits, sans perte de qualité.</div>
   </header>
 
-  <label class="glass dropzone" id="dropzone" for="fileInput" tabindex="0">
-    <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
-    <strong>Glissez vos photos ici, ou cliquez pour parcourir</strong>
-    <p>JPG, PNG, WebP · plusieurs fichiers à la fois</p>
-  </label>
-  <input type="file" id="fileInput" class="file-input-safe" accept="image/*" multiple>
+  <div class="glass dropzone" id="dropzone">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+      </svg>
+    </div>
+    <strong>Dépose une image ici, ou clique</strong>
+    <p>JPG, PNG, WebP — tout se passe dans ton navigateur, rien n'est envoyé nulle part</p>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
 
   <div class="glass original-wrap hidden" id="originalWrap">
+    <img id="originalImg" alt="Aperçu original">
     <div class="filename-tag" id="filenameTag"></div>
-    <div class="thumb-strip" id="thumbStrip"></div>
   </div>
 
   <div class="glass panel hidden" id="controls">
-    <div class="panel-title">Nombre de morceaux (par photo)</div>
+    <div class="panel-title">Nombre de morceaux</div>
     <div class="segmented" id="pieceSeg">
       <button data-val="2" class="active">2</button>
       <button data-val="3">3</button>
       <button data-val="4">4</button>
-      <button data-val="5">5</button>
     </div>
 
     <div class="row-gap">
-      <div class="panel-title">Cadrage de sortie</div>
+      <div class="panel-title">Format de sortie</div>
       <div class="segmented" id="ratioSeg">
         <button data-val="original" class="active">Original</button>
         <button data-val="0.8">4:5</button>
         <button data-val="0.5625">9:16</button>
         <button data-val="1">1:1</button>
-        <button data-val="custom">Personnalisé</button>
+        <button data-val="custom">Perso</button>
       </div>
       <div class="custom-ratio" id="customRatioRow">
-        <label>L</label><input type="number" id="customW" value="4" min="1" step="0.1">
+        <label>Largeur</label>
+        <input type="number" id="customW" value="4" min="1" step="0.1">
         <span>:</span>
-        <label>H</label><input type="number" id="customH" value="5" min="1" step="0.1">
+        <label>Hauteur</label>
+        <input type="number" id="customH" value="5" min="1" step="0.1">
       </div>
-      <div class="panel-note">Un cadrage autre que « Original » recadre l'image avant de la découper.</div>
-    </div>
-
-    <div class="row-gap">
-      <div class="panel-title">Format de fichier</div>
-      <div class="segmented" id="formatSeg">
-        <button data-val="image/png" data-ext="png" class="active">PNG</button>
-        <button data-val="image/jpeg" data-ext="jpg">JPEG</button>
-        <button data-val="image/webp" data-ext="webp">WebP</button>
-      </div>
-      <div class="panel-note">PNG : aucune perte de qualité. JPEG : conserve les métadonnées EXIF et le profil colorimétrique d'origine s'ils existent. WebP : fichiers les plus légers, avec compression.</div>
     </div>
 
     <div class="switch-row">
@@ -210,394 +445,270 @@
         <div class="label-main">Chevauchement léger</div>
         <div class="label-sub">Évite de couper un sujet pile au milieu</div>
       </div>
-      <label class="switch"><input type="checkbox" id="addOverlap"><span class="track"></span></label>
+      <label class="switch">
+        <input type="checkbox" id="addOverlap">
+        <span class="track"></span>
+      </label>
     </div>
 
-    <div class="top-actions"><button class="btn ghost" id="resetBtn">↺ Recommencer</button></div>
+    <div class="top-actions">
+      <button class="btn ghost" id="resetBtn">↺ Changer d'image</button>
+    </div>
   </div>
 
   <div class="download-all hidden" id="downloadAllWrap">
-    <button class="btn primary wide" id="downloadAllBtn">⬇ Télécharger tout (.zip)</button>
+    <button class="btn primary wide" id="downloadAllBtn">⬇ Tout télécharger (.zip)</button>
   </div>
 
   <div class="preview-row" id="previewRow"></div>
 
-  <div class="glass hint hidden" id="hint">
-    <div class="hint-title" id="hintTitle"></div>
-    <ul class="hint-list" id="hintList"></ul>
+  <div class="glass carousel-panel hidden" id="carouselPanel">
+    <div class="panel-title">Simulation carrousel (swipe)</div>
+    <div class="carousel-phone" id="carouselPhone">
+      <div class="carousel" id="carousel"></div>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+    <div class="carousel-hint">Glisse pour prévisualiser l'effet carrousel Instagram</div>
   </div>
+
+  <p class="glass hint hidden" id="hint"></p>
 </div>
 
 <script>
-const fileInput = document.getElementById('fileInput');
 const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
 const controls = document.getElementById('controls');
 const originalWrap = document.getElementById('originalWrap');
+const originalImg = document.getElementById('originalImg');
 const filenameTag = document.getElementById('filenameTag');
-const thumbStrip = document.getElementById('thumbStrip');
 const previewRow = document.getElementById('previewRow');
 const pieceSeg = document.getElementById('pieceSeg');
 const ratioSeg = document.getElementById('ratioSeg');
-const formatSeg = document.getElementById('formatSeg');
+const customRatioRow = document.getElementById('customRatioRow');
+const customW = document.getElementById('customW');
+const customH = document.getElementById('customH');
+const addOverlapChk = document.getElementById('addOverlap');
+const resetBtn = document.getElementById('resetBtn');
 const hint = document.getElementById('hint');
-const hintTitle = document.getElementById('hintTitle');
-const hintList = document.getElementById('hintList');
 const downloadAllWrap = document.getElementById('downloadAllWrap');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
+const carouselPanel = document.getElementById('carouselPanel');
+const carouselPhone = document.getElementById('carouselPhone');
+const carousel = document.getElementById('carousel');
+const carouselDots = document.getElementById('carouselDots');
 
-let currentImages = [];   // { img, name, isJPEG, iccBytes, exifObj }
-let currentCanvases = []; // { canvas, name, sourceItem }
+let currentImage = null;
+let currentFilename = 'photo';
+let currentCanvases = [];
 let pieceCount = 2;
 let ratioMode = 'original';
-let exportFormat = 'image/png';
-let exportExt = 'png';
 
-/* ---------- Metadata & color-profile helpers ---------- */
-
-function dataURLToArrayBuffer(dataURL) {
-  const base64 = dataURL.split(',')[1];
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-function dataURLToBlob(dataURL) {
-  const [header, base64] = dataURL.split(',');
-  const mime = header.match(/:(.*?);/)[1];
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-}
-
-// Reads the embedded ICC color profile from a JPEG's raw bytes (APP2 segments), if present.
-function extractICCProfile(buf) {
-  try {
-    const view = new DataView(buf);
-    if (view.byteLength < 4 || view.getUint16(0) !== 0xFFD8) return null;
-    let offset = 2;
-    const chunks = [];
-    while (offset + 2 <= view.byteLength) {
-      if (view.getUint8(offset) !== 0xFF) { offset++; continue; }
-      const marker = view.getUint8(offset + 1);
-      if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { offset += 2; continue; }
-      if (marker === 0xD9 || marker === 0xDA) break;
-      if (offset + 4 > view.byteLength) break;
-      const length = view.getUint16(offset + 2);
-      if (marker === 0xE2 && length >= 16) {
-        let isICC = true;
-        const id = 'ICC_PROFILE\0';
-        for (let k = 0; k < 12; k++) {
-          if (view.getUint8(offset + 4 + k) !== id.charCodeAt(k)) { isICC = false; break; }
-        }
-        if (isICC) {
-          const chunkIndex = view.getUint8(offset + 4 + 12);
-          const dataStart = offset + 4 + 14;
-          const dataLen = length - 2 - 14;
-          if (dataLen > 0) chunks.push({ index: chunkIndex, data: new Uint8Array(buf, dataStart, dataLen) });
-        }
-      }
-      offset += 2 + length;
-    }
-    if (!chunks.length) return null;
-    chunks.sort((a, b) => a.index - b.index);
-    const total = chunks.reduce((s, c) => s + c.data.length, 0);
-    const merged = new Uint8Array(total);
-    let pos = 0;
-    for (const c of chunks) { merged.set(c.data, pos); pos += c.data.length; }
-    return merged;
-  } catch (e) { return null; }
-}
-
-// Re-embeds an ICC color profile into a freshly-encoded JPEG blob.
-async function injectICCProfile(blob, iccBytes) {
-  try {
-    const buf = await blob.arrayBuffer();
-    const view = new DataView(buf);
-    if (view.getUint16(0) !== 0xFFD8) return blob;
-    const idBytes = [0x49,0x43,0x43,0x5F,0x50,0x52,0x4F,0x46,0x49,0x4C,0x45,0x00];
-    const maxChunkData = 65519;
-    const totalChunks = Math.max(1, Math.ceil(iccBytes.length / maxChunkData));
-    const segments = [];
-    for (let i = 0; i < totalChunks; i++) {
-      const chunkData = iccBytes.slice(i * maxChunkData, (i + 1) * maxChunkData);
-      const segLength = 2 + idBytes.length + 2 + chunkData.length;
-      const seg = new Uint8Array(2 + segLength);
-      seg[0] = 0xFF; seg[1] = 0xE2;
-      seg[2] = (segLength >> 8) & 0xFF; seg[3] = segLength & 0xFF;
-      seg.set(idBytes, 4);
-      seg[16] = i + 1;
-      seg[17] = totalChunks;
-      seg.set(chunkData, 18);
-      segments.push(seg);
-    }
-    // Insert after any leading APPn segments (e.g. EXIF/APP1) instead of forcing position
-    // right after SOI, so the file keeps the conventional marker order — APP1 (EXIF) before
-    // APP2 (ICC) — that some readers expect rather than just tolerate.
-    let insertAt = 2;
-    while (insertAt + 4 <= buf.byteLength) {
-      if (view.getUint8(insertAt) !== 0xFF) break;
-      const marker = view.getUint8(insertAt + 1);
-      if (marker < 0xE0 || marker > 0xEF) break;
-      const segLen = view.getUint16(insertAt + 2);
-      insertAt += 2 + segLen;
-    }
-
-    const segTotalLen = segments.reduce((s, x) => s + x.length, 0);
-    const head = new Uint8Array(buf, 0, insertAt);
-    const tail = new Uint8Array(buf, insertAt);
-    const out = new Uint8Array(head.length + segTotalLen + tail.length);
-    out.set(head, 0);
-    let pos = head.length;
-    for (const s of segments) { out.set(s, pos); pos += s.length; }
-    out.set(tail, pos);
-    return new Blob([out], { type: 'image/jpeg' });
-  } catch (e) { return blob; }
-}
-
-function exifHasData(exifObj) {
-  if (!exifObj) return false;
-  return ['0th', 'Exif', 'GPS', '1st'].some(k => exifObj[k] && Object.keys(exifObj[k]).length > 0);
-}
-
-// Produces the final downloadable blob for one fragment, in the chosen file format,
-// re-attaching the source photo's EXIF metadata and ICC color profile when exporting to JPEG.
-async function canvasToFinalBlob(canvas, item) {
-  if (exportFormat === 'image/jpeg') {
-    let dataUrl = canvas.toDataURL('image/jpeg', 0.98);
-    if (item.exifObj && exifHasData(item.exifObj) && typeof piexif !== 'undefined') {
-      try {
-        // Drop the thumbnail IFD: its byte offsets point into the *original* file and are
-        // meaningless once re-embedded here. Strict readers (macOS ImageIO / Preview / Finder)
-        // reject the whole EXIF block over this rather than ignoring just the thumbnail —
-        // which is why metadata could silently fail to show up. Keep only 0th/Exif/GPS.
-        const cleanExif = {
-          '0th': item.exifObj['0th'] || {},
-          'Exif': item.exifObj['Exif'] || {},
-          'GPS': item.exifObj['GPS'] || {}
-        };
-        const exifBytes = piexif.dump(cleanExif);
-        dataUrl = piexif.insert(exifBytes, dataUrl);
-      } catch (e) {
-        console.warn('Réinjection EXIF impossible pour', item.name, e);
-      }
-    }
-    let blob = dataURLToBlob(dataUrl);
-    if (item.iccBytes) blob = await injectICCProfile(blob, item.iccBytes);
-    return blob;
-  }
-  return new Promise(res => canvas.toBlob(res, exportFormat, 0.95));
-}
-
-/* ---------- UI wiring ---------- */
-
+dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
 dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('drag');
-  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
-document.getElementById('resetBtn').addEventListener('click', () => location.reload());
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+resetBtn.addEventListener('click', () => location.reload());
 
 pieceSeg.addEventListener('click', e => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  [...pieceSeg.children].forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...pieceSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   pieceCount = parseInt(btn.dataset.val, 10);
   renderSplits();
 });
 
 ratioSeg.addEventListener('click', e => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  [...ratioSeg.children].forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...ratioSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   ratioMode = btn.dataset.val;
-  document.getElementById('customRatioRow').classList.toggle('show', ratioMode === 'custom');
+  customRatioRow.classList.toggle('show', ratioMode === 'custom');
   renderSplits();
 });
 
-formatSeg.addEventListener('click', e => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  [...formatSeg.children].forEach(b => b.classList.remove('active')); btn.classList.add('active');
-  exportFormat = btn.dataset.val; exportExt = btn.dataset.ext;
-  renderSplits();
-});
+customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+addOverlapChk.addEventListener('change', renderSplits);
 
-document.getElementById('customW').addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
-document.getElementById('customH').addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
-document.getElementById('addOverlap').addEventListener('change', renderSplits);
-
-function handleFiles(files) {
-  const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-  if (!validFiles.length) return;
-
-  currentImages = [];
-  let loadedCount = 0;
-  dropzone.style.display = 'none';
-
-  validFiles.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target.result;
-      const img = new Image();
-      img.onload = () => {
-        const isJPEG = file.type === 'image/jpeg' || file.type === 'image/jpg';
-        let iccBytes = null, exifObj = null;
-        if (isJPEG) {
-          try { iccBytes = extractICCProfile(dataURLToArrayBuffer(dataUrl)); } catch (e) {}
-          try { if (typeof piexif !== 'undefined') exifObj = piexif.load(dataUrl); } catch (e) {}
-        }
-
-        currentImages.push({
-          img, name: file.name.replace(/\.[^.]+$/, '') || 'photo',
-          isJPEG, iccBytes, exifObj
-        });
-
-        loadedCount++;
-        if (loadedCount === validFiles.length) {
-          controls.classList.remove('hidden');
-          originalWrap.classList.remove('hidden');
-          filenameTag.textContent = `${currentImages.length} photo(s) importée(s), prêtes à être découpées`;
-          thumbStrip.innerHTML = '';
-          currentImages.forEach(it => {
-            const t = document.createElement('div'); t.className = 'thumb';
-            const im = document.createElement('img'); im.src = it.img.src; im.alt = it.name;
-            t.appendChild(im); thumbStrip.appendChild(t);
-          });
-          renderSplits();
-        }
-      };
-      img.src = dataUrl;
+function handleFile(file) {
+  if (!file || !file.type || !file.type.startsWith('image/')) return;
+  currentFilename = (file.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      currentImage = img;
+      originalImg.src = e.target.result;
+      filenameTag.textContent = `${file.name || 'image partagée'} — ${img.naturalWidth}×${img.naturalHeight}px`;
+      dropzone.classList.add('hidden');
+      controls.classList.remove('hidden');
+      originalWrap.classList.remove('hidden');
+      hint.classList.remove('hidden');
+      renderSplits();
     };
-    reader.readAsDataURL(file);
-  });
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function getTargetRatio() {
   if (ratioMode === 'original') return 'original';
   if (ratioMode === 'custom') {
-    const w = parseFloat(document.getElementById('customW').value) || 1;
-    const h = parseFloat(document.getElementById('customH').value) || 1;
+    const w = parseFloat(customW.value) || 1;
+    const h = parseFloat(customH.value) || 1;
     return w / h;
   }
   return parseFloat(ratioMode);
 }
 
-function getWorkingCanvas(imageObj, targetRatio, n) {
-  const W = imageObj.naturalWidth, H = imageObj.naturalHeight;
-  const c = document.createElement('canvas');
+function getWorkingCanvas(targetRatio, n) {
+  const W = currentImage.naturalWidth;
+  const H = currentImage.naturalHeight;
 
   if (targetRatio === 'original') {
+    const c = document.createElement('canvas');
     c.width = W; c.height = H;
-    c.getContext('2d').drawImage(imageObj, 0, 0);
+    c.getContext('2d').drawImage(currentImage, 0, 0);
     return c;
   }
 
   const idealTotalW = n * targetRatio * H;
+  const c = document.createElement('canvas');
   if (idealTotalW <= W) {
-    const cropW = idealTotalW, sx = (W - cropW) / 2;
-    c.width = cropW; c.height = H;
-    c.getContext('2d').drawImage(imageObj, sx, 0, cropW, H, 0, 0, cropW, H);
+    const cropW = idealTotalW;
+    const sx = (W - cropW) / 2;
+    c.width = cropW;
+    c.height = H;
+    c.getContext('2d').drawImage(currentImage, sx, 0, cropW, H, 0, 0, cropW, H);
   } else {
-    const cropH = W / (n * targetRatio), sy = (H - cropH) / 2;
-    c.width = W; c.height = cropH;
-    c.getContext('2d').drawImage(imageObj, 0, sy, W, cropH, 0, 0, W, cropH);
+    const cropH = W / (n * targetRatio);
+    const sy = (H - cropH) / 2;
+    c.width = W;
+    c.height = cropH;
+    c.getContext('2d').drawImage(currentImage, 0, sy, W, cropH, 0, 0, W, cropH);
   }
   return c;
 }
 
 function renderSplits() {
-  if (!currentImages.length) return;
+  if (!currentImage) return;
   previewRow.innerHTML = '';
   currentCanvases = [];
 
   const n = pieceCount;
   const targetRatio = getTargetRatio();
-  const overlap = document.getElementById('addOverlap').checked ? 0.04 : 0;
+  const overlap = addOverlapChk.checked ? 0.04 : 0;
 
-  currentImages.forEach(item => {
-    const workingCanvas = getWorkingCanvas(item.img, targetRatio, n);
-    const W = workingCanvas.width, H = workingCanvas.height;
-    const baseSliceW = W / n;
-    const overlapPx = Math.round(baseSliceW * overlap);
+  const workingCanvas = getWorkingCanvas(targetRatio, n);
+  const W = workingCanvas.width;
+  const H = workingCanvas.height;
+  const baseSliceW = W / n;
+  const overlapPx = Math.round(baseSliceW * overlap);
 
-    for (let i = 0; i < n; i++) {
-      let sx = Math.max(0, Math.round(i * baseSliceW) - overlapPx);
-      let sw = Math.min(W - sx, Math.round(baseSliceW) + overlapPx * 2);
+  for (let i = 0; i < n; i++) {
+    let sx = Math.round(i * baseSliceW) - overlapPx;
+    let sw = Math.round(baseSliceW) + overlapPx * 2;
+    sx = Math.max(0, sx);
+    sw = Math.min(W - sx, sw);
 
-      const canvas = document.createElement('canvas');
-      canvas.width = sw; canvas.height = H;
-      canvas.getContext('2d').drawImage(workingCanvas, sx, 0, sw, H, 0, 0, sw, H);
+    const canvas = document.createElement('canvas');
+    canvas.width = sw;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(workingCanvas, sx, 0, sw, H, 0, 0, sw, H);
+    currentCanvases.push(canvas);
 
-      const partName = `${item.name}_part${i + 1}`;
-      currentCanvases.push({ canvas, name: partName, sourceItem: item });
+    const card = document.createElement('div');
+    card.className = 'glass card';
 
-      const card = document.createElement('div'); card.className = 'glass card';
-      const frameNum = document.createElement('div'); frameNum.className = 'frame-num'; frameNum.textContent = `N°${i + 1}/${n} — ${item.name}`;
+    const imgPrev = document.createElement('img');
+    imgPrev.src = canvas.toDataURL('image/png');
 
-      const imgPrev = document.createElement('img');
-      imgPrev.src = canvas.toDataURL('image/jpeg', 0.85); // preview only — the actual export uses the format chosen below
+    const dims = document.createElement('div');
+    dims.className = 'dims';
+    dims.textContent = `${sw} × ${H} px`;
 
-      const dims = document.createElement('div'); dims.className = 'dims'; dims.textContent = `${sw} × ${H} px`;
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'btn ghost';
+    dlBtn.textContent = `⬇ Partie ${i + 1}/${n}`;
+    dlBtn.onclick = () => downloadCanvas(canvas, `${currentFilename}_part${i + 1}`);
 
-      const dlBtn = document.createElement('button'); dlBtn.className = 'btn ghost'; dlBtn.textContent = '⬇ Télécharger';
-      dlBtn.onclick = () => downloadCanvas(canvas, partName, item);
-
-      card.appendChild(frameNum); card.appendChild(imgPrev); card.appendChild(dims); card.appendChild(dlBtn);
-      previewRow.appendChild(card);
-    }
-  });
+    card.appendChild(imgPrev);
+    card.appendChild(dims);
+    card.appendChild(dlBtn);
+    previewRow.appendChild(card);
+  }
 
   downloadAllWrap.classList.remove('hidden');
-  updateSummary();
-}
+  renderCarousel();
 
-function updateSummary() {
-  hint.classList.remove('hidden');
-  hintTitle.textContent = `${currentCanvases.length} fragment(s) générés à partir de ${currentImages.length} photo(s) — format ${exportExt.toUpperCase()}.`;
-
-  hintList.innerHTML = '';
-  const addItem = (text, ok) => {
-    const li = document.createElement('li');
-    li.className = ok ? 'ok' : 'info';
-    li.textContent = text;
-    hintList.appendChild(li);
-  };
-
-  if (exportFormat === 'image/png') {
-    addItem('Qualité : identique à l\'original, aucune compression avec perte.', true);
-    addItem('Métadonnées et profil colorimétrique : non conservés — le format PNG ne les prend pas en charge.', false);
-  } else if (exportFormat === 'image/jpeg') {
-    addItem('Qualité : compression quasi sans perte (qualité maximale).', true);
-    const anyICC = currentImages.some(it => it.iccBytes);
-    addItem(anyICC ? 'Profil colorimétrique d\'origine conservé.' : 'Aucun profil colorimétrique intégré détecté sur l\'original — l\'espace colorimétrique n\'est pas modifié.', anyICC);
-    const anyExif = currentImages.some(it => exifHasData(it.exifObj));
-    addItem(anyExif ? 'Métadonnées EXIF (appareil, date, réglages…) conservées.' : 'Aucune métadonnée EXIF trouvée sur l\'original.', anyExif);
+  let ratioLabel;
+  if (targetRatio === 'original') {
+    ratioLabel = 'sans recadrage';
   } else {
-    addItem('Qualité : compression avec perte, fichiers plus légers.', false);
-    addItem('Métadonnées et profil colorimétrique : non conservés.', false);
+    const activeBtn = ratioSeg.querySelector('.active');
+    const label = ratioMode === 'custom' ? `${customW.value}:${customH.value}` : activeBtn.textContent;
+    ratioLabel = `recadré en ${label}`;
   }
+  hint.textContent = `Chaque morceau fait ${Math.round(baseSliceW + overlapPx*2)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
+// ---------- Simulation carrousel (swipe) ----------
+function renderCarousel() {
+  carousel.innerHTML = '';
+  carouselDots.innerHTML = '';
 
-async function downloadCanvas(canvas, name, sourceItem) {
-  const blob = await canvasToFinalBlob(canvas, sourceItem);
-  downloadBlob(blob, `${name}.${exportExt}`);
-}
+  if (!currentCanvases.length) {
+    carouselPanel.classList.add('hidden');
+    return;
+  }
+  carouselPanel.classList.remove('hidden');
 
-// Registers the service worker so the app can be installed and used offline.
-// No-ops safely on file:// or unsupported browsers instead of throwing.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch((err) => {
-      console.warn('Service worker non enregistré (normal en ouverture locale file://) :', err);
-    });
+  const first = currentCanvases[0];
+  carouselPhone.style.aspectRatio = `${first.width} / ${first.height}`;
+
+  currentCanvases.forEach((canvas, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'slide';
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.alt = `Morceau ${i + 1}`;
+    slide.appendChild(img);
+    carousel.appendChild(slide);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    carouselDots.appendChild(dot);
   });
+
+  carousel.scrollLeft = 0;
+  const dots = [...carouselDots.children];
+  carousel.onscroll = () => {
+    const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  };
+}
+
+function downloadCanvas(canvas, name) {
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
 }
 
 downloadAllBtn.addEventListener('click', async () => {
@@ -608,18 +719,110 @@ downloadAllBtn.addEventListener('click', async () => {
 
   try {
     const zip = new JSZip();
-    for (const entry of currentCanvases) {
-      const blob = await canvasToFinalBlob(entry.canvas, entry.sourceItem);
-      zip.file(`${entry.name}.${exportExt}`, blob);
+    for (let i = 0; i < currentCanvases.length; i++) {
+      const blob = await new Promise(res => currentCanvases[i].toBlob(res, 'image/png'));
+      zip.file(`${currentFilename}_part${i + 1}.png`, blob);
     }
     const content = await zip.generateAsync({ type: 'blob' });
-    downloadBlob(content, 'Luchiaro_Splits.zip');
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentFilename}_split.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   } catch (err) {
     alert("Erreur lors de la création du zip : " + err.message);
   } finally {
-    downloadAllBtn.disabled = false; downloadAllBtn.innerHTML = originalText;
+    downloadAllBtn.disabled = false;
+    downloadAllBtn.innerHTML = originalText;
   }
 });
+
+// ---------- PWA : enregistrement du service worker ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // L'app reste pleinement fonctionnable sans SW (juste pas de mode
+      // hors-ligne / partage entrant) — on ne bloque jamais l'UI pour ça.
+    });
+  });
+}
+
+// ---------- Web Share Target : récupération des images partagées ----------
+// Après un partage OS -> /share-target/, le SW a stocké le(s) fichier(s) dans
+// IndexedDB puis redirigé ici. Au chargement, on va les chercher, on les
+// injecte comme si l'utilisateur les avait glissées-déposées, puis on nettoie.
+// Toute la logique est défensive : IndexedDB absente ou vide (ex. navigateurs
+// sans support du Web Share Target, comme Safari iOS à ce jour) => no-op silencieux.
+const SHARE_DB_NAME = 'luchiaro-share';
+const SHARE_STORE_NAME = 'shared-images';
+
+function openShareDB() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB indisponible'));
+      return;
+    }
+    const request = indexedDB.open(SHARE_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(SHARE_STORE_NAME)) {
+        request.result.createObjectStore(SHARE_STORE_NAME, { autoIncrement: true });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function consumeSharedImages() {
+  let db;
+  try {
+    db = await openShareDB();
+  } catch (err) {
+    return; // pas d'IndexedDB dans ce navigateur — on ignore silencieusement
+  }
+
+  try {
+    const entries = await new Promise((resolve, reject) => {
+      const tx = db.transaction(SHARE_STORE_NAME, 'readonly');
+      const store = tx.objectStore(SHARE_STORE_NAME);
+      const req = store.getAll();
+      const keyReq = store.getAllKeys();
+      let values, keys;
+      req.onsuccess = () => { values = req.result; if (keys !== undefined) resolve({ values, keys }); };
+      keyReq.onsuccess = () => { keys = keyReq.result; if (values !== undefined) resolve({ values, keys }); };
+      tx.onerror = () => reject(tx.error);
+    });
+
+    if (entries.values && entries.values.length) {
+      // On ne traite qu'une image à la fois dans le flux actuel — on prend la
+      // plus récente et on ignore le reste (qui sera aussi nettoyé ci-dessous).
+      const item = entries.values[entries.values.length - 1];
+      const file = new File([item.blob], item.name || 'image-partagee', {
+        type: item.type || item.blob.type || 'image/png'
+      });
+      handleFile(file);
+
+      // Nettoyage : on vide la table pour ne pas réinjecter au prochain chargement
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(SHARE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(SHARE_STORE_NAME);
+        entries.keys.forEach((k) => store.delete(k));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+  } catch (err) {
+    // Table vide, transaction avortée, etc. — on laisse simplement l'app
+    // démarrer normalement sur son écran de dépôt manuel.
+  } finally {
+    if (db) db.close();
+  }
+}
+
+window.addEventListener('DOMContentLoaded', consumeSharedImages);
 </script>
 </body>
 </html>
