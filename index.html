@@ -12,8 +12,11 @@
 <meta name="apple-mobile-web-app-title" content="Luchiaro.splitt">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Incrustation visuelle des données sur le canvas -->
 <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<!-- Préservation binaire des métadonnées lors de l'export JPEG -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -31,41 +34,18 @@
   }
 
   /* ---------- Ambient liquid background ---------- */
-  .ambient {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(70px);
-    opacity: 0.55;
-    will-change: transform;
-  }
+  .ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; will-change: transform; }
   .blob.b1 { width: 480px; height: 480px; background: #ff8a8a; top: -140px; left: -120px; animation: float1 22s ease-in-out infinite; }
   .blob.b2 { width: 420px; height: 420px; background: #6ea8ff; top: 20%; right: -160px; animation: float2 26s ease-in-out infinite; }
   .blob.b3 { width: 380px; height: 380px; background: #c58aff; bottom: -120px; left: 10%; animation: float3 24s ease-in-out infinite; }
   .blob.b4 { width: 320px; height: 320px; background: #5ce0d0; bottom: 5%; right: 8%; animation: float1 30s ease-in-out infinite reverse; }
 
-  @keyframes float1 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50% { transform: translate(40px, 30px) scale(1.08); }
-  }
-  @keyframes float2 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50% { transform: translate(-50px, 40px) scale(0.95); }
-  }
-  @keyframes float3 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50% { transform: translate(30px, -40px) scale(1.1); }
-  }
+  @keyframes float1 { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px, 30px) scale(1.08); } }
+  @keyframes float2 { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px, 40px) scale(0.95); } }
+  @keyframes float3 { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px, -40px) scale(1.1); } }
 
-  @media (prefers-reduced-motion: reduce) {
-    .blob { animation: none !important; }
-  }
+  @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
 
   .content { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
 
@@ -88,12 +68,7 @@
     background-clip: text;
     font-weight: 700;
   }
-  .tagline {
-    margin-top: 6px;
-    font-size: 0.94rem;
-    color: #55565c;
-    font-weight: 500;
-  }
+  .tagline { margin-top: 6px; font-size: 0.94rem; color: #55565c; font-weight: 500; }
 
   /* ---------- Glass panel base ---------- */
   .glass {
@@ -102,26 +77,15 @@
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 26px;
-    box-shadow:
-      0 8px 32px rgba(31, 41, 60, 0.10),
-      inset 0 1px 0 rgba(255,255,255,0.8);
+    box-shadow: 0 8px 32px rgba(31, 41, 60, 0.10), inset 0 1px 0 rgba(255,255,255,0.8);
   }
 
   /* ---------- Dropzone ---------- */
-  .dropzone {
-    padding: 56px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform .2s ease, box-shadow .2s ease;
-  }
+  .dropzone { padding: 56px 24px; text-align: center; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
   .dropzone:hover { transform: translateY(-2px); }
-  .dropzone.drag {
-    box-shadow: 0 0 0 3px rgba(110,168,255,0.5), 0 8px 32px rgba(31,41,60,0.12);
-  }
+  .dropzone.drag { box-shadow: 0 0 0 3px rgba(110,168,255,0.5), 0 8px 32px rgba(31,41,60,0.12); }
   .dropzone .icon {
-    width: 56px; height: 56px;
-    margin: 0 auto 14px;
-    border-radius: 18px;
+    width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 18px;
     background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 6px 18px rgba(110,168,255,0.35);
@@ -132,349 +96,106 @@
   input[type=file] { display: none; }
 
   /* ---------- Panels ---------- */
-  .panel {
-    padding: 22px 22px 24px;
-    margin-top: 18px;
-  }
-  .panel-title {
-    font-size: 0.74rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #7a7b81;
-    margin-bottom: 12px;
-  }
+  .panel { padding: 22px 22px 24px; margin-top: 18px; }
+  .panel-title { font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #7a7b81; margin-bottom: 12px; }
 
-  /* segmented control */
-  .segmented {
-    display: flex;
-    background: rgba(120,120,128,0.12);
-    border-radius: 14px;
-    padding: 4px;
-    gap: 4px;
-  }
+  .segmented { display: flex; background: rgba(120,120,128,0.12); border-radius: 14px; padding: 4px; gap: 4px; }
   .segmented button {
-    flex: 1;
-    border: none;
-    background: transparent;
-    padding: 9px 10px;
-    border-radius: 10px;
-    font-size: 0.86rem;
-    font-weight: 600;
-    color: #48494e;
-    cursor: pointer;
-    transition: background .15s, color .15s, box-shadow .15s;
+    flex: 1; border: none; background: transparent; padding: 9px 10px;
+    border-radius: 10px; font-size: 0.86rem; font-weight: 600; color: #48494e;
+    cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
   }
-  .segmented button.active {
-    background: #ffffff;
-    color: #1c1c1e;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  }
+  .segmented button.active { background: #ffffff; color: #1c1c1e; box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
 
   .row-gap { margin-top: 20px; }
-
-  .custom-ratio {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: 14px;
-  }
+  .custom-ratio { display: none; align-items: center; gap: 10px; margin-top: 14px; }
   .custom-ratio.show { display: flex; }
-  .custom-ratio input {
-    width: 72px;
-    padding: 9px 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.7);
-    font-size: 0.9rem;
-    text-align: center;
-    font-family: inherit;
-  }
+  .custom-ratio input { width: 72px; padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.7); font-size: 0.9rem; text-align: center; }
   .custom-ratio span { color: #8a8b91; font-weight: 600; }
   .custom-ratio label { font-size: 0.8rem; color: #6b6c72; }
 
   /* toggle switch */
-  .switch-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 18px;
-  }
+  .switch-row { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
   .switch-row .label-main { font-size: 0.9rem; font-weight: 500; color: #2c2d31; }
   .switch-row .label-sub { font-size: 0.78rem; color: #7a7b81; margin-top: 2px; }
-  .switch {
-    position: relative;
-    width: 46px; height: 28px;
-    flex-shrink: 0;
-  }
+  .switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .switch .track {
-    position: absolute; inset: 0;
-    background: rgba(120,120,128,0.28);
-    border-radius: 999px;
-    transition: background .2s;
-    cursor: pointer;
-  }
+  .switch .track { position: absolute; inset: 0; background: rgba(120,120,128,0.28); border-radius: 999px; transition: background .2s; cursor: pointer; }
   .switch .track::before {
-    content: '';
-    position: absolute;
-    width: 24px; height: 24px;
-    left: 2px; top: 2px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-    transition: transform .2s;
+    content: ''; position: absolute; width: 24px; height: 24px; left: 2px; top: 2px;
+    background: white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.25); transition: transform .2s;
   }
   .switch input:checked + .track { background: linear-gradient(135deg, #6ea8ff, #c58aff); }
   .switch input:checked + .track::before { transform: translateX(18px); }
 
   /* ---------- Réglages EXIF avancés ---------- */
-  .exif-options {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(0,0,0,0.07);
-  }
-  .exif-fields {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
+  .exif-options { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .exif-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .exif-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: rgba(120,120,128,0.12);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #55565c;
-    cursor: pointer;
-    transition: background .15s, color .15s;
-    user-select: none;
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+    border-radius: 999px; background: rgba(120,120,128,0.12); font-size: 0.8rem;
+    font-weight: 600; color: #55565c; cursor: pointer; transition: background .15s, color .15s; user-select: none;
   }
   .exif-chip input { display: none; }
-  .exif-chip.active {
-    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
-    color: white;
-  }
-  .exif-subrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-  }
+  .exif-chip.active { background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff); color: white; }
+  .exif-subrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
   .exif-subrow:first-of-type { margin-top: 0; }
-  .exif-subrow-label {
-    font-size: 0.82rem;
-    color: #6b6c72;
-    font-weight: 500;
-    width: 62px;
-    flex-shrink: 0;
-  }
-  .exif-subrow select {
-    flex: 1;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.7);
-    font-size: 0.85rem;
-    font-family: inherit;
-    color: #2c2d31;
-  }
-  .exif-subrow input[type=range] {
-    flex: 1;
-    accent-color: #8a6ef0;
-  }
-  .exif-opacity-value {
-    font-size: 0.78rem;
-    color: #6b6c72;
-    width: 36px;
-    text-align: right;
-    flex-shrink: 0;
-  }
+  .exif-subrow-label { font-size: 0.82rem; color: #6b6c72; font-weight: 500; width: 62px; flex-shrink: 0; }
+  .exif-subrow select { flex: 1; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.7); font-size: 0.85rem; font-family: inherit; color: #2c2d31; }
+  .exif-subrow input[type=range] { flex: 1; accent-color: #8a6ef0; }
+  .exif-opacity-value { font-size: 0.78rem; color: #6b6c72; width: 36px; text-align: right; flex-shrink: 0; }
 
   .top-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 11px 18px;
-    border-radius: 14px;
-    border: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: transform .1s, box-shadow .15s, filter .15s;
-  }
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 11px 18px; border-radius: 14px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: transform .1s, box-shadow .15s, filter .15s; }
   .btn:active { transform: scale(0.97); }
-  .btn.ghost {
-    background: rgba(120,120,128,0.14);
-    color: #3a3b3f;
-  }
+  .btn.ghost { background: rgba(120,120,128,0.14); color: #3a3b3f; }
   .btn.ghost:hover { background: rgba(120,120,128,0.22); }
-  .btn.primary {
-    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
-    color: white;
-    box-shadow: 0 6px 18px rgba(110,168,255,0.35);
-  }
+  .btn.primary { background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff); color: white; box-shadow: 0 6px 18px rgba(110,168,255,0.35); }
   .btn.primary:hover { filter: brightness(1.05); }
   .btn.wide { width: 100%; justify-content: center; padding: 15px; font-size: 0.96rem; }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
   /* ---------- Original preview ---------- */
   .original-wrap { margin-top: 18px; padding: 14px; text-align: center; }
-  .original-wrap img {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 16px;
-    display: block;
-    margin: 0 auto;
-  }
-  .filename-tag {
-    margin-top: 10px;
-    font-size: 0.78rem;
-    color: #7a7b81;
-    font-weight: 500;
-  }
+  .original-wrap img { max-width: 100%; max-height: 300px; border-radius: 16px; display: block; margin: 0 auto; }
+  .filename-tag { margin-top: 10px; font-size: 0.78rem; color: #7a7b81; font-weight: 500; }
 
   /* ---------- Results ---------- */
-  .download-all {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(0,0,0,0.07);
-  }
-  .download-all .panel-title { margin-bottom: 12px; }
+  .download-all { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
 
-  .preview-row {
-    display: flex;
-    gap: 14px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-  }
-  .card {
-    flex: 1 1 210px;
-    padding: 12px;
-    text-align: center;
-  }
-  .card img {
-    max-width: 100%;
-    border-radius: 12px;
-    display: block;
-    margin: 0 auto 10px;
-  }
+  .preview-row { display: flex; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+  .card { flex: 1 1 210px; padding: 12px; text-align: center; }
+  .card img { max-width: 100%; border-radius: 12px; display: block; margin: 0 auto 10px; }
   .card .dims { font-size: 0.76rem; color: #7a7b81; margin-bottom: 10px; font-weight: 500; }
 
   /* ---------- Simulation carrousel (swipe) ---------- */
-  .carousel-panel {
-    padding: 22px;
-    margin-top: 18px;
-  }
-  .carousel-phone {
-    max-width: 300px;
-    margin: 4px auto 0;
-    border-radius: 22px;
-    overflow: hidden;
-    position: relative;
-    background: #0c0c0e;
-    aspect-ratio: 4 / 5;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-  }
-  .carousel {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    scrollbar-width: none;      /* Firefox */
-    -ms-overflow-style: none;   /* Edge legacy / IE */
-  }
-  .carousel::-webkit-scrollbar { display: none; } /* Chrome / Safari / Edge Chromium */
-  .carousel .slide {
-    flex: 0 0 100%;
-    width: 100%;
-    height: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-  .carousel .slide img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-  }
-  .carousel-dots {
-    position: absolute;
-    bottom: 12px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    pointer-events: none;
-  }
-  .carousel-dots .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.45);
-    transition: background .2s, transform .2s;
-  }
+  .carousel-panel { padding: 22px; margin-top: 18px; }
+  .carousel-phone { max-width: 300px; margin: 4px auto 0; border-radius: 22px; overflow: hidden; position: relative; background: #0c0c0e; aspect-ratio: 4 / 5; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+  .carousel { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none; }
+  .carousel::-webkit-scrollbar { display: none; }
+  .carousel .slide { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+  .carousel .slide img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .carousel-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+  .carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); transition: background .2s, transform .2s; }
   .carousel-dots .dot.active { background: #ffffff; transform: scale(1.35); }
-  .carousel-hint {
-    text-align: center;
-    font-size: 0.78rem;
-    color: #7a7b81;
-    margin-top: 12px;
-    font-weight: 500;
-  }
+  .carousel-hint { text-align: center; font-size: 0.78rem; color: #7a7b81; margin-top: 12px; font-weight: 500; }
 
-  .hint {
-    margin-top: 20px;
-    font-size: 0.82rem;
-    color: #5a5b60;
-    line-height: 1.55;
-    padding: 15px 17px;
-  }
+  .hint { margin-top: 20px; font-size: 0.82rem; color: #5a5b60; line-height: 1.55; padding: 15px 17px; }
   .hidden { display: none !important; }
 
-  .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,.4);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 480px) {
-    .wordmark { font-size: 1.7rem; }
-  }
+  @media (max-width: 480px) { .wordmark { font-size: 1.7rem; } }
 
   /* ---------- Toast ---------- */
   .toast {
-    position: fixed;
-    left: 50%;
-    bottom: 28px;
-    transform: translateX(-50%) translateY(12px);
-    max-width: 88%;
-    padding: 13px 20px;
-    border-radius: 14px;
-    background: rgba(28,28,30,0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #fff;
-    font-size: 0.86rem;
-    font-weight: 500;
-    text-align: center;
-    z-index: 50;
-    opacity: 0;
-    transition: opacity .25s ease, transform .25s ease;
-    pointer-events: none;
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(12px);
+    max-width: 88%; padding: 13px 20px; border-radius: 14px; background: rgba(28,28,30,0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fff;
+    font-size: 0.86rem; font-weight: 500; text-align: center; z-index: 50; opacity: 0;
+    transition: opacity .25s ease, transform .25s ease; pointer-events: none;
     box-shadow: 0 10px 28px rgba(0,0,0,0.28);
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -521,7 +242,7 @@
     </div>
 
     <div class="row-gap">
-      <div class="panel-title">Format de sortie</div>
+      <div class="panel-title">Cadrage de sortie</div>
       <div class="segmented" id="ratioSeg">
         <button data-val="original" class="active">Original</button>
         <button data-val="0.8">4:5</button>
@@ -535,6 +256,15 @@
         <span>:</span>
         <label>Hauteur</label>
         <input type="number" id="customH" value="5" min="1" step="0.1">
+      </div>
+    </div>
+
+    <div class="row-gap">
+      <div class="panel-title">Format d'export</div>
+      <div class="segmented" id="formatSeg">
+        <button data-val="image/png" data-ext="png" class="active">PNG</button>
+        <button data-val="image/jpeg" data-ext="jpg">JPEG</button>
+        <button data-val="image/webp" data-ext="webp">WebP</button>
       </div>
     </div>
 
@@ -555,12 +285,10 @@
       <div class="exif-subrow">
         <label class="exif-subrow-label">Position</label>
         <select id="exifPosition">
-          <option value="top-left">Haut gauche</option>
-          <option value="top-center">Haut centre</option>
-          <option value="top-right">Haut droite</option>
-          <option value="bottom-left">Bas gauche</option>
-          <option value="bottom-center">Bas centre</option>
           <option value="bottom-right" selected>Bas droite</option>
+          <option value="bottom-left">Bas gauche</option>
+          <option value="top-right">Haut droite</option>
+          <option value="top-left">Haut gauche</option>
         </select>
       </div>
 
@@ -577,13 +305,8 @@
   </div>
 
   <div class="download-all hidden" id="downloadAllWrap">
-    <div class="panel-title">Format d'export</div>
-    <div class="segmented" id="formatSeg">
-      <button data-val="png" class="active">PNG</button>
-      <button data-val="jpeg">JPEG</button>
-      <button data-val="zip" class="hidden" id="zipBtn">Archive .zip</button>
-    </div>
-    <button class="btn primary wide" id="shareBtn" style="margin-top: 10px;">📤 Enregistrer</button>
+    <button class="btn primary wide hidden" id="shareBtn">📤 Partager / Enregistrer</button>
+    <button class="btn ghost wide" id="downloadAllBtn">⬇ Télécharger tous les fichiers</button>
   </div>
 
   <div class="preview-row" id="previewRow"></div>
@@ -612,17 +335,14 @@ const filenameTag = document.getElementById('filenameTag');
 const previewRow = document.getElementById('previewRow');
 const pieceSeg = document.getElementById('pieceSeg');
 const ratioSeg = document.getElementById('ratioSeg');
+const formatSeg = document.getElementById('formatSeg');
 const customRatioRow = document.getElementById('customRatioRow');
 const customW = document.getElementById('customW');
 const customH = document.getElementById('customH');
 const resetBtn = document.getElementById('resetBtn');
 const hint = document.getElementById('hint');
 const downloadAllWrap = document.getElementById('downloadAllWrap');
-const formatSeg = document.getElementById('formatSeg');
-const zipBtn = document.getElementById('zipBtn');
-const shareBtn = document.getElementById('shareBtn');
-
-let currentFormat = 'png';
+const downloadAllBtn = document.getElementById('downloadAllBtn');
 const carouselPanel = document.getElementById('carouselPanel');
 const carouselPhone = document.getElementById('carouselPhone');
 const carousel = document.getElementById('carousel');
@@ -636,16 +356,144 @@ const exifFieldsRow = document.getElementById('exifFieldsRow');
 const exifPosition = document.getElementById('exifPosition');
 const exifOpacity = document.getElementById('exifOpacity');
 const exifOpacityValue = document.getElementById('exifOpacityValue');
+const shareBtn = document.getElementById('shareBtn');
 const toast = document.getElementById('toast');
 
+// État d'export
+let exportFormat = 'image/png';
+let exportExt = 'png';
+let currentIccBytes = null;
+let currentExifObj = null;
+
+// État visuel / découpe
 let currentExifData = null;
 let exifFieldsEnabled = {};
-
 let currentImage = null;
 let currentFilename = 'photo';
 let currentCanvases = [];
 let pieceCount = 2;
 let ratioMode = 'original';
+
+function dataURLToArrayBuffer(dataURL) {
+  const base64 = dataURL.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function dataURLToBlob(dataURL) {
+  const [header, base64] = dataURL.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+function extractICCProfile(buf) {
+  try {
+    const view = new DataView(buf);
+    if (view.byteLength < 4 || view.getUint16(0) !== 0xFFD8) return null;
+    let offset = 2;
+    const chunks = [];
+    while (offset + 2 <= view.byteLength) {
+      if (view.getUint8(offset) !== 0xFF) { offset++; continue; }
+      const marker = view.getUint8(offset + 1);
+      if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { offset += 2; continue; }
+      if (marker === 0xD9 || marker === 0xDA) break;
+      if (offset + 4 > view.byteLength) break;
+      const length = view.getUint16(offset + 2);
+      if (marker === 0xE2 && length >= 16) {
+        let isICC = true;
+        const id = 'ICC_PROFILE\0';
+        for (let k = 0; k < 12; k++) {
+          if (view.getUint8(offset + 4 + k) !== id.charCodeAt(k)) { isICC = false; break; }
+        }
+        if (isICC) {
+          const chunkIndex = view.getUint8(offset + 4 + 12);
+          const dataStart = offset + 4 + 14;
+          const dataLen = length - 2 - 14;
+          if (dataLen > 0) chunks.push({ index: chunkIndex, data: new Uint8Array(buf, dataStart, dataLen) });
+        }
+      }
+      offset += 2 + length;
+    }
+    if (!chunks.length) return null;
+    chunks.sort((a, b) => a.index - b.index);
+    const total = chunks.reduce((s, c) => s + c.data.length, 0);
+    const merged = new Uint8Array(total);
+    let pos = 0;
+    for (const c of chunks) { merged.set(c.data, pos); pos += c.data.length; }
+    return merged;
+  } catch (e) { return null; }
+}
+
+async function injectICCProfile(blob, iccBytes) {
+  try {
+    const buf = await blob.arrayBuffer();
+    const view = new DataView(buf);
+    if (view.getUint16(0) !== 0xFFD8) return blob;
+    const idBytes = [0x49,0x43,0x43,0x5F,0x50,0x4F,0x46,0x49,0x4C,0x45,0x00];
+    const maxChunkData = 65519;
+    const totalChunks = Math.max(1, Math.ceil(iccBytes.length / maxChunkData));
+    const segments = [];
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkData = iccBytes.slice(i * maxChunkData, (i + 1) * maxChunkData);
+      const segLength = 2 + idBytes.length + 2 + chunkData.length;
+      const seg = new Uint8Array(2 + segLength);
+      seg[0] = 0xFF; seg[1] = 0xE2;
+      seg[2] = (segLength >> 8) & 0xFF; seg[3] = segLength & 0xFF;
+      seg.set(idBytes, 4);
+      seg[16] = i + 1;
+      seg[17] = totalChunks;
+      seg.set(chunkData, 18);
+      segments.push(seg);
+    }
+    
+    let insertAt = 2;
+    while (insertAt + 4 <= buf.byteLength) {
+      if (view.getUint8(insertAt) !== 0xFF) break;
+      const marker = view.getUint8(insertAt + 1);
+      if (marker < 0xE0 || marker > 0xEF) break;
+      const segLen = view.getUint16(insertAt + 2);
+      insertAt += 2 + segLen;
+    }
+
+    const segTotalLen = segments.reduce((s, x) => s + x.length, 0);
+    const head = new Uint8Array(buf, 0, insertAt);
+    const tail = new Uint8Array(buf, insertAt);
+    const out = new Uint8Array(head.length + segTotalLen + tail.length);
+    out.set(head, 0);
+    let pos = head.length;
+    for (const s of segments) { out.set(s, pos); pos += s.length; }
+    out.set(tail, pos);
+    return new Blob([out], { type: 'image/jpeg' });
+  } catch (e) { return blob; }
+}
+
+async function canvasToFinalBlob(canvas) {
+  if (exportFormat === 'image/jpeg') {
+    let dataUrl = canvas.toDataURL('image/jpeg', 0.98);
+    if (currentExifObj && typeof piexif !== 'undefined') {
+      try {
+        const cleanExif = {
+          '0th': currentExifObj['0th'] || {},
+          'Exif': currentExifObj['Exif'] || {},
+          'GPS': currentExifObj['GPS'] || {}
+        };
+        const exifBytes = piexif.dump(cleanExif);
+        dataUrl = piexif.insert(exifBytes, dataUrl);
+      } catch (e) {
+        console.warn('Réinjection EXIF impossible', e);
+      }
+    }
+    let blob = dataURLToBlob(dataUrl);
+    if (currentIccBytes) blob = await injectICCProfile(blob, currentIccBytes);
+    return blob;
+  }
+  return new Promise(res => canvas.toBlob(res, exportFormat, 0.98));
+}
 
 function debounce(fn, wait) {
   let t;
@@ -685,16 +533,18 @@ ratioSeg.addEventListener('click', e => {
   renderSplits();
 });
 
-customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
-customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
-
 formatSeg.addEventListener('click', e => {
   const btn = e.target.closest('button');
   if (!btn) return;
   [...formatSeg.children].forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  currentFormat = btn.dataset.val;
+  exportFormat = btn.dataset.val;
+  exportExt = btn.dataset.ext;
+  renderSplits();
 });
+
+customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
 
 showExifChk.addEventListener('change', () => {
   exifOptions.classList.toggle('hidden', !showExifChk.checked);
@@ -712,12 +562,22 @@ function handleFile(file) {
   currentFilename = (file.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
   resetExifState();
   readExif(file);
+
   const reader = new FileReader();
   reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    
+    currentIccBytes = null;
+    currentExifObj = null;
+    if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+      try { currentIccBytes = extractICCProfile(dataURLToArrayBuffer(dataUrl)); } catch(err) {}
+      try { if (typeof piexif !== 'undefined') currentExifObj = piexif.load(dataUrl); } catch(err) {}
+    }
+
     const img = new Image();
     img.onload = () => {
       currentImage = img;
-      originalImg.src = e.target.result;
+      originalImg.src = dataUrl;
       filenameTag.textContent = `${file.name || 'image partagée'} — ${img.naturalWidth}×${img.naturalHeight}px`;
       dropzone.classList.add('hidden');
       controls.classList.remove('hidden');
@@ -725,12 +585,11 @@ function handleFile(file) {
       hint.classList.remove('hidden');
       renderSplits();
     };
-    img.src = e.target.result;
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
 }
 
-// ---------- EXIF (réglages photo) ----------
 const EXIF_FIELDS = [
   { key: 'model', label: 'Modèle' },
   { key: 'focal', label: 'Focale' },
@@ -804,13 +663,11 @@ async function resolveLocationText(lat, lon) {
       currentExifData.locationText = text;
       if (showExifChk.checked && exifFieldsEnabled.location) renderSplits();
     }
-  } catch (err) {
-    // Pas de réseau, timeout, ou service indisponible — on garde les coordonnées brutes en repli
-  }
+  } catch (err) {}
 }
 
 function readExif(file) {
-  if (typeof EXIF === 'undefined') return; // CDN indisponible (hors-ligne) — pas bloquant
+  if (typeof EXIF === 'undefined') return;
   try {
     EXIF.getData(file, function () {
       const focal = EXIF.getTag(this, 'FocalLength');
@@ -846,9 +703,7 @@ function readExif(file) {
 
       if (lat != null) resolveLocationText(lat, lon);
     });
-  } catch (err) {
-    // Image sans EXIF exploitable, format non supporté (ex: certains WebP/PNG) — silencieux
-  }
+  } catch (err) {}
 }
 
 function fieldHasData(key) {
@@ -904,12 +759,9 @@ function drawExifOverlay(ctx, w, h, text, position, opacity) {
   const fontSize = Math.max(13, Math.round(w * 0.032));
   ctx.save();
   ctx.font = `600 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, sans-serif`;
-  
-  // Opacité via couleur RGBA (plus fiable que globalAlpha avec ombre)
-  const opacityHex = Math.round(opacity * 255).toString(16).padStart(2, '0');
-  ctx.fillStyle = `#ffffff${opacityHex}`;
-  
-  ctx.shadowColor = `rgba(0,0,0,${opacity * 0.6})`;
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
   ctx.shadowBlur = fontSize * 0.6;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = fontSize * 0.1;
@@ -919,16 +771,12 @@ function drawExifOverlay(ctx, w, h, text, position, opacity) {
   let x, y, align, baseline;
 
   switch (position) {
-    case 'top-left':
-      x = paddingX; y = paddingY + fontSize; align = 'left'; baseline = 'alphabetic'; break;
-    case 'top-center':
-      x = w / 2; y = paddingY + fontSize; align = 'center'; baseline = 'alphabetic'; break;
-    case 'top-right':
-      x = w - paddingX; y = paddingY + fontSize; align = 'right'; baseline = 'alphabetic'; break;
     case 'bottom-left':
       x = paddingX; y = h - paddingY; align = 'left'; baseline = 'bottom'; break;
-    case 'bottom-center':
-      x = w / 2; y = h - paddingY; align = 'center'; baseline = 'bottom'; break;
+    case 'top-right':
+      x = w - paddingX; y = paddingY + fontSize; align = 'right'; baseline = 'alphabetic'; break;
+    case 'top-left':
+      x = paddingX; y = paddingY + fontSize; align = 'left'; baseline = 'alphabetic'; break;
     case 'bottom-right':
     default:
       x = w - paddingX; y = h - paddingY; align = 'right'; baseline = 'bottom'; break;
@@ -1016,7 +864,7 @@ function renderSplits() {
     card.className = 'glass card';
 
     const imgPrev = document.createElement('img');
-    imgPrev.src = canvas.toDataURL('image/png');
+    imgPrev.src = canvas.toDataURL('image/jpeg', 0.85);
 
     const dims = document.createElement('div');
     dims.className = 'dims';
@@ -1025,7 +873,7 @@ function renderSplits() {
     const dlBtn = document.createElement('button');
     dlBtn.className = 'btn ghost';
     dlBtn.textContent = n === 1 ? '⬇ Télécharger' : `⬇ Partie ${i + 1}/${n}`;
-    dlBtn.onclick = async () => await downloadSingleImage(canvas, n === 1 ? currentFilename : `${currentFilename}_part${i + 1}`, 'png');
+    dlBtn.onclick = () => downloadCanvas(canvas, n === 1 ? currentFilename : `${currentFilename}_part${i + 1}`);
 
     card.appendChild(imgPrev);
     card.appendChild(dims);
@@ -1034,13 +882,7 @@ function renderSplits() {
   }
 
   downloadAllWrap.classList.remove('hidden');
-  zipBtn.classList.toggle('hidden', n === 1);
-  if (n === 1 && currentFormat === 'zip') {
-    currentFormat = 'png';
-    [...formatSeg.children].forEach(b => {
-      b.classList.toggle('active', b.dataset.val === 'png');
-    });
-  }
+  updateShareButtonVisibility(n);
   renderCarousel();
 
   let ratioLabel;
@@ -1051,14 +893,19 @@ function renderSplits() {
     const label = ratioMode === 'custom' ? `${customW.value}:${customH.value}` : activeBtn.textContent;
     ratioLabel = `recadré en ${label}`;
   }
+
+  let formatInfo = '';
+  if (exportFormat === 'image/png') formatInfo = 'Export PNG (zéro perte).';
+  else if (exportFormat === 'image/jpeg') formatInfo = currentIccBytes ? 'Export JPEG (Profil ICC/EXIF d\'origine conservés).' : 'Export JPEG (Qualité max).';
+  else formatInfo = 'Export WebP (Fichiers allégés).';
+
   if (n === 1) {
-    hint.textContent = `Image finale : ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité.`;
+    hint.textContent = `Image finale : ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. ${formatInfo}`;
   } else {
-    hint.textContent = `Chaque morceau fait environ ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
+    hint.textContent = `Chaque morceau fait environ ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. ${formatInfo} Poste les morceaux dans l'ordre.`;
   }
 }
 
-// ---------- Simulation carrousel (swipe) ----------
 function renderCarousel() {
   carousel.innerHTML = '';
   carouselDots.innerHTML = '';
@@ -1078,7 +925,7 @@ function renderCarousel() {
     const slide = document.createElement('div');
     slide.className = 'slide';
     const img = document.createElement('img');
-    img.src = canvas.toDataURL('image/png');
+    img.src = canvas.toDataURL('image/jpeg', 0.85);
     img.alt = single ? 'Aperçu' : `Morceau ${i + 1}`;
     slide.appendChild(img);
     carousel.appendChild(slide);
@@ -1093,9 +940,7 @@ function renderCarousel() {
   carousel.scrollLeft = 0;
   carousel.style.overflowX = single ? 'hidden' : 'auto';
   carouselPanelTitle.textContent = single ? 'Aperçu de l\u2019export' : 'Simulation carrousel (swipe)';
-  carouselHint.textContent = single
-    ? 'Image unique — pas de découpe'
-    : 'Glisse pour prévisualiser l\u2019effet carrousel Instagram';
+  carouselHint.textContent = single ? 'Image unique — pas de découpe' : 'Glisse pour prévisualiser l\u2019effet carrousel Instagram';
 
   if (!single) {
     const dots = [...carouselDots.children];
@@ -1108,81 +953,42 @@ function renderCarousel() {
   }
 }
 
-// ---------- Optimisation : créer blob + télécharger en une passe ----------
-async function blobToDownload(canvas, format) {
-  return new Promise((resolve) => {
-    const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-    const quality = format === 'jpeg' ? 0.95 : undefined;
-    canvas.toBlob(resolve, mime, quality);
-  });
+async function downloadCanvas(canvas, name) {
+  try {
+    const blob = await canvasToFinalBlob(canvas);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.${exportExt}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch(err) {
+    showToast("Erreur d'exportation : " + err.message);
+  }
 }
 
-function triggerDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 50); // Révocation rapide
-}
-
-async function downloadSingleImage(canvas, name, format) {
-  const blob = await blobToDownload(canvas, format);
-  triggerDownload(blob, `${name}.${format === 'jpeg' ? 'jpg' : 'png'}`);
-}
-
-// ---------- Bouton Enregistrer (galerie mobile + ZIP) ----------
-shareBtn.addEventListener('click', async () => {
+downloadAllBtn.addEventListener('click', async () => {
   if (!currentCanvases.length) return;
-  shareBtn.disabled = true;
-  const originalText = shareBtn.innerHTML;
-  shareBtn.innerHTML = '<span class="spinner"></span>';
+  downloadAllBtn.disabled = true;
+  const originalText = downloadAllBtn.innerHTML;
+  downloadAllBtn.innerHTML = '<span class="spinner"></span> Téléchargement…';
 
   try {
-    if (currentFormat === 'zip') {
-      // Archive ZIP
-      const zip = new JSZip();
-      for (let i = 0; i < currentCanvases.length; i++) {
-        const blob = await blobToDownload(currentCanvases[i], 'png');
-        const name = currentCanvases.length === 1 ? `${currentFilename}.png` : `${currentFilename}_part${i + 1}.png`;
-        zip.file(name, blob);
-      }
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      triggerDownload(zipBlob, `${currentFilename}_split.zip`);
-      showToast('✓ Archive téléchargée');
-    } else {
-      // PNG ou JPEG — vérifier Web Share API d'abord
-      const files = await Promise.all(
-        currentCanvases.map(async (canvas, i) => {
-          const blob = await blobToDownload(canvas, currentFormat);
-          const ext = currentFormat === 'jpeg' ? 'jpg' : 'png';
-          const name = currentCanvases.length === 1 
-            ? `${currentFilename}.${ext}` 
-            : `${currentFilename}_part${i + 1}.${ext}`;
-          return new File([blob], name, { type: blob.type });
-        })
-      );
-
-      if (navigator.canShare && navigator.canShare({ files })) {
-        await navigator.share({ files, title: 'Luchiaro.splitt' });
-      } else {
-        // Fallback : télécharger chaque fichier
-        for (const file of files) {
-          triggerDownload(file, file.name);
-          await new Promise((r) => setTimeout(r, 100));
-        }
-        showToast('✓ Fichiers téléchargés');
-      }
+    for (let i = 0; i < currentCanvases.length; i++) {
+      const name = currentCanvases.length === 1 ? currentFilename : `${currentFilename}_part${i + 1}`;
+      await downloadCanvas(currentCanvases[i], name);
+      if (i < currentCanvases.length - 1) await new Promise((r) => setTimeout(r, 250));
     }
   } catch (err) {
-    if (err.name !== 'AbortError') showToast('Erreur : ' + (err.message || 'action échouée'));
+    showToast('Le téléchargement a échoué : ' + err.message);
   } finally {
-    shareBtn.disabled = false;
-    shareBtn.innerHTML = originalText;
+    downloadAllBtn.disabled = false;
+    downloadAllBtn.innerHTML = originalText;
   }
 });
 
-// ---------- Enregistrer dans Photos (Web Share API, fichiers) ----------
 let toastTimeout;
 function showToast(msg) {
   toast.textContent = msg;
@@ -1195,24 +1001,63 @@ function showToast(msg) {
   }, 3200);
 }
 
+function computeShareSupport(count) {
+  if (!navigator.canShare || !navigator.share) return false;
+  try {
+    const files = Array.from({ length: count }, (_, i) =>
+      new File([new Uint8Array([0])], `f${i}.${exportExt}`, { type: exportFormat })
+    );
+    return navigator.canShare({ files });
+  } catch (err) {
+    return false;
+  }
+}
 
+function updateShareButtonVisibility(count) {
+  shareBtn.classList.toggle('hidden', !computeShareSupport(count));
+}
 
-// ---------- PWA : enregistrement du service worker ----------
+shareBtn.addEventListener('click', async () => {
+  if (!currentCanvases.length) return;
+  shareBtn.disabled = true;
+  const originalText = shareBtn.innerHTML;
+  shareBtn.innerHTML = '<span class="spinner"></span> Préparation…';
+
+  try {
+    const single = currentCanvases.length === 1;
+    const files = await Promise.all(
+      currentCanvases.map(async (canvas, i) => {
+        const blob = await canvasToFinalBlob(canvas);
+        const name = single ? `${currentFilename}.${exportExt}` : `${currentFilename}_part${i + 1}.${exportExt}`;
+        return new File([blob], name, { type: exportFormat });
+      })
+    );
+
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({
+        files,
+        title: 'Luchiaro.splitt',
+        text: single ? 'Photo exportée avec Luchiaro.splitt' : 'Morceaux à poster en carrousel — Luchiaro.splitt'
+      });
+    } else {
+      showToast('Le partage direct n\u2019est pas disponible ici.');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      showToast('Le partage a échoué.');
+    }
+  } finally {
+    shareBtn.disabled = false;
+    shareBtn.innerHTML = originalText;
+  }
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // L'app reste pleinement fonctionnable sans SW (juste pas de mode
-      // hors-ligne / partage entrant) — on ne bloque jamais l'UI pour ça.
-    });
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
 
-// ---------- Web Share Target : récupération des images partagées ----------
-// Après un partage OS -> /share-target/, le SW a stocké le(s) fichier(s) dans
-// IndexedDB puis redirigé ici. Au chargement, on va les chercher, on les
-// injecte comme si l'utilisateur les avait glissées-déposées, puis on nettoie.
-// Toute la logique est défensive : IndexedDB absente ou vide (ex. navigateurs
-// sans support du Web Share Target, comme Safari iOS à ce jour) => no-op silencieux.
 const SHARE_DB_NAME = 'luchiaro-share';
 const SHARE_STORE_NAME = 'shared-images';
 
@@ -1235,11 +1080,7 @@ function openShareDB() {
 
 async function consumeSharedImages() {
   let db;
-  try {
-    db = await openShareDB();
-  } catch (err) {
-    return; // pas d'IndexedDB dans ce navigateur — on ignore silencieusement
-  }
+  try { db = await openShareDB(); } catch (err) { return; }
 
   try {
     const entries = await new Promise((resolve, reject) => {
@@ -1254,15 +1095,12 @@ async function consumeSharedImages() {
     });
 
     if (entries.values && entries.values.length) {
-      // On ne traite qu'une image à la fois dans le flux actuel — on prend la
-      // plus récente et on ignore le reste (qui sera aussi nettoyé ci-dessous).
       const item = entries.values[entries.values.length - 1];
       const file = new File([item.blob], item.name || 'image-partagee', {
         type: item.type || item.blob.type || 'image/png'
       });
       handleFile(file);
 
-      // Nettoyage : on vide la table pour ne pas réinjecter au prochain chargement
       await new Promise((resolve, reject) => {
         const tx = db.transaction(SHARE_STORE_NAME, 'readwrite');
         const store = tx.objectStore(SHARE_STORE_NAME);
@@ -1272,8 +1110,6 @@ async function consumeSharedImages() {
       });
     }
   } catch (err) {
-    // Table vide, transaction avortée, etc. — on laisse simplement l'app
-    // démarrer normalement sur son écran de dépôt manuel.
   } finally {
     if (db) db.close();
   }
