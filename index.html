@@ -344,25 +344,10 @@
   /* ---------- Results ---------- */
   .download-all {
     margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.07);
   }
-  .download-group {
-    display: flex;
-    gap: 8px;
-  }
-  .download-group select {
-    flex: 0 0 132px;
-    padding: 0 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.7);
-    font-size: 0.85rem;
-    font-family: inherit;
-    color: #2c2d31;
-  }
-  .download-group .btn { flex: 1; justify-content: center; }
+  .download-all .panel-title { margin-bottom: 12px; }
 
   .preview-row {
     display: flex;
@@ -570,10 +555,12 @@
       <div class="exif-subrow">
         <label class="exif-subrow-label">Position</label>
         <select id="exifPosition">
-          <option value="bottom-right" selected>Bas droite</option>
-          <option value="bottom-left">Bas gauche</option>
-          <option value="top-right">Haut droite</option>
           <option value="top-left">Haut gauche</option>
+          <option value="top-center">Haut centre</option>
+          <option value="top-right">Haut droite</option>
+          <option value="bottom-left">Bas gauche</option>
+          <option value="bottom-center">Bas centre</option>
+          <option value="bottom-right" selected>Bas droite</option>
         </select>
       </div>
 
@@ -590,14 +577,13 @@
   </div>
 
   <div class="download-all hidden" id="downloadAllWrap">
-    <button class="btn primary wide hidden" id="shareBtn">📤 Partager / Enregistrer</button>
-    <div class="download-group">
-      <select id="downloadMode">
-        <option value="zip">Archive .zip</option>
-        <option value="individual">Fichiers séparés</option>
-      </select>
-      <button class="btn ghost" id="downloadAllBtn">⬇ Télécharger</button>
+    <div class="panel-title">Format d'export</div>
+    <div class="segmented" id="formatSeg">
+      <button data-val="png" class="active">PNG</button>
+      <button data-val="jpeg">JPEG</button>
+      <button data-val="zip" class="hidden" id="zipBtn">Archive .zip</button>
     </div>
+    <button class="btn primary wide" id="shareBtn" style="margin-top: 10px;">📤 Enregistrer</button>
   </div>
 
   <div class="preview-row" id="previewRow"></div>
@@ -632,8 +618,11 @@ const customH = document.getElementById('customH');
 const resetBtn = document.getElementById('resetBtn');
 const hint = document.getElementById('hint');
 const downloadAllWrap = document.getElementById('downloadAllWrap');
-const downloadAllBtn = document.getElementById('downloadAllBtn');
-const downloadMode = document.getElementById('downloadMode');
+const formatSeg = document.getElementById('formatSeg');
+const zipBtn = document.getElementById('zipBtn');
+const shareBtn = document.getElementById('shareBtn');
+
+let currentFormat = 'png';
 const carouselPanel = document.getElementById('carouselPanel');
 const carouselPhone = document.getElementById('carouselPhone');
 const carousel = document.getElementById('carousel');
@@ -647,7 +636,6 @@ const exifFieldsRow = document.getElementById('exifFieldsRow');
 const exifPosition = document.getElementById('exifPosition');
 const exifOpacity = document.getElementById('exifOpacity');
 const exifOpacityValue = document.getElementById('exifOpacityValue');
-const shareBtn = document.getElementById('shareBtn');
 const toast = document.getElementById('toast');
 
 let currentExifData = null;
@@ -699,6 +687,14 @@ ratioSeg.addEventListener('click', e => {
 
 customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
 customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+
+formatSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...formatSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFormat = btn.dataset.val;
+});
 
 showExifChk.addEventListener('change', () => {
   exifOptions.classList.toggle('hidden', !showExifChk.checked);
@@ -908,9 +904,12 @@ function drawExifOverlay(ctx, w, h, text, position, opacity) {
   const fontSize = Math.max(13, Math.round(w * 0.032));
   ctx.save();
   ctx.font = `600 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, sans-serif`;
-  ctx.globalAlpha = opacity;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  
+  // Opacité via couleur RGBA (plus fiable que globalAlpha avec ombre)
+  const opacityHex = Math.round(opacity * 255).toString(16).padStart(2, '0');
+  ctx.fillStyle = `#ffffff${opacityHex}`;
+  
+  ctx.shadowColor = `rgba(0,0,0,${opacity * 0.6})`;
   ctx.shadowBlur = fontSize * 0.6;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = fontSize * 0.1;
@@ -920,12 +919,16 @@ function drawExifOverlay(ctx, w, h, text, position, opacity) {
   let x, y, align, baseline;
 
   switch (position) {
-    case 'bottom-left':
-      x = paddingX; y = h - paddingY; align = 'left'; baseline = 'bottom'; break;
-    case 'top-right':
-      x = w - paddingX; y = paddingY + fontSize; align = 'right'; baseline = 'alphabetic'; break;
     case 'top-left':
       x = paddingX; y = paddingY + fontSize; align = 'left'; baseline = 'alphabetic'; break;
+    case 'top-center':
+      x = w / 2; y = paddingY + fontSize; align = 'center'; baseline = 'alphabetic'; break;
+    case 'top-right':
+      x = w - paddingX; y = paddingY + fontSize; align = 'right'; baseline = 'alphabetic'; break;
+    case 'bottom-left':
+      x = paddingX; y = h - paddingY; align = 'left'; baseline = 'bottom'; break;
+    case 'bottom-center':
+      x = w / 2; y = h - paddingY; align = 'center'; baseline = 'bottom'; break;
     case 'bottom-right':
     default:
       x = w - paddingX; y = h - paddingY; align = 'right'; baseline = 'bottom'; break;
@@ -1022,7 +1025,7 @@ function renderSplits() {
     const dlBtn = document.createElement('button');
     dlBtn.className = 'btn ghost';
     dlBtn.textContent = n === 1 ? '⬇ Télécharger' : `⬇ Partie ${i + 1}/${n}`;
-    dlBtn.onclick = () => downloadCanvas(canvas, n === 1 ? currentFilename : `${currentFilename}_part${i + 1}`);
+    dlBtn.onclick = async () => await downloadSingleImage(canvas, n === 1 ? currentFilename : `${currentFilename}_part${i + 1}`, 'png');
 
     card.appendChild(imgPrev);
     card.appendChild(dims);
@@ -1031,10 +1034,13 @@ function renderSplits() {
   }
 
   downloadAllWrap.classList.remove('hidden');
-  const zipOption = downloadMode.querySelector('option[value="zip"]');
-  zipOption.disabled = n === 1;
-  if (n === 1 && downloadMode.value === 'zip') downloadMode.value = 'individual';
-  updateShareButtonVisibility(n);
+  zipBtn.classList.toggle('hidden', n === 1);
+  if (n === 1 && currentFormat === 'zip') {
+    currentFormat = 'png';
+    [...formatSeg.children].forEach(b => {
+      b.classList.toggle('active', b.dataset.val === 'png');
+    });
+  }
   renderCarousel();
 
   let ratioLabel;
@@ -1102,57 +1108,77 @@ function renderCarousel() {
   }
 }
 
-function downloadCanvas(canvas, name) {
-  canvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }, 'image/png');
+// ---------- Optimisation : créer blob + télécharger en une passe ----------
+async function blobToDownload(canvas, format) {
+  return new Promise((resolve) => {
+    const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+    const quality = format === 'jpeg' ? 0.95 : undefined;
+    canvas.toBlob(resolve, mime, quality);
+  });
 }
 
-downloadAllBtn.addEventListener('click', async () => {
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 50); // Révocation rapide
+}
+
+async function downloadSingleImage(canvas, name, format) {
+  const blob = await blobToDownload(canvas, format);
+  triggerDownload(blob, `${name}.${format === 'jpeg' ? 'jpg' : 'png'}`);
+}
+
+// ---------- Bouton Enregistrer (galerie mobile + ZIP) ----------
+shareBtn.addEventListener('click', async () => {
   if (!currentCanvases.length) return;
-  const mode = downloadMode.value;
-  downloadAllBtn.disabled = true;
-  const originalText = downloadAllBtn.innerHTML;
-  downloadAllBtn.innerHTML = '<span class="spinner"></span> Préparation…';
+  shareBtn.disabled = true;
+  const originalText = shareBtn.innerHTML;
+  shareBtn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    if (mode === 'zip') {
+    if (currentFormat === 'zip') {
+      // Archive ZIP
       const zip = new JSZip();
       for (let i = 0; i < currentCanvases.length; i++) {
-        const blob = await new Promise(res => currentCanvases[i].toBlob(res, 'image/png'));
+        const blob = await blobToDownload(currentCanvases[i], 'png');
         const name = currentCanvases.length === 1 ? `${currentFilename}.png` : `${currentFilename}_part${i + 1}.png`;
         zip.file(name, blob);
       }
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${currentFilename}_split.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      triggerDownload(zipBlob, `${currentFilename}_split.zip`);
+      showToast('✓ Archive téléchargée');
     } else {
-      // Téléchargements séparés — léger délai entre chaque pour éviter que le
-      // navigateur ne bloque les téléchargements multiples déclenchés d'un coup.
-      for (let i = 0; i < currentCanvases.length; i++) {
-        const name = currentCanvases.length === 1 ? currentFilename : `${currentFilename}_part${i + 1}`;
-        downloadCanvas(currentCanvases[i], name);
-        if (i < currentCanvases.length - 1) await new Promise((r) => setTimeout(r, 200));
+      // PNG ou JPEG — vérifier Web Share API d'abord
+      const files = await Promise.all(
+        currentCanvases.map(async (canvas, i) => {
+          const blob = await blobToDownload(canvas, currentFormat);
+          const ext = currentFormat === 'jpeg' ? 'jpg' : 'png';
+          const name = currentCanvases.length === 1 
+            ? `${currentFilename}.${ext}` 
+            : `${currentFilename}_part${i + 1}.${ext}`;
+          return new File([blob], name, { type: blob.type });
+        })
+      );
+
+      if (navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({ files, title: 'Luchiaro.splitt' });
+      } else {
+        // Fallback : télécharger chaque fichier
+        for (const file of files) {
+          triggerDownload(file, file.name);
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        showToast('✓ Fichiers téléchargés');
       }
     }
   } catch (err) {
-    showToast('Le téléchargement a échoué : ' + err.message);
+    if (err.name !== 'AbortError') showToast('Erreur : ' + (err.message || 'action échouée'));
   } finally {
-    downloadAllBtn.disabled = false;
-    downloadAllBtn.innerHTML = originalText;
+    shareBtn.disabled = false;
+    shareBtn.innerHTML = originalText;
   }
 });
 
@@ -1169,57 +1195,7 @@ function showToast(msg) {
   }, 3200);
 }
 
-function computeShareSupport(count) {
-  if (!navigator.canShare || !navigator.share) return false;
-  try {
-    const files = Array.from({ length: count }, (_, i) =>
-      new File([new Uint8Array([0])], `f${i}.png`, { type: 'image/png' })
-    );
-    return navigator.canShare({ files });
-  } catch (err) {
-    return false;
-  }
-}
 
-function updateShareButtonVisibility(count) {
-  shareBtn.classList.toggle('hidden', !computeShareSupport(count));
-}
-
-shareBtn.addEventListener('click', async () => {
-  if (!currentCanvases.length) return;
-  shareBtn.disabled = true;
-  const originalText = shareBtn.innerHTML;
-  shareBtn.innerHTML = '<span class="spinner"></span> Préparation…';
-
-  try {
-    const single = currentCanvases.length === 1;
-    const files = await Promise.all(
-      currentCanvases.map((canvas, i) => new Promise((resolve) => {
-        canvas.toBlob((blob) => {
-          const name = single ? `${currentFilename}.png` : `${currentFilename}_part${i + 1}.png`;
-          resolve(new File([blob], name, { type: 'image/png' }));
-        }, 'image/png');
-      }))
-    );
-
-    if (navigator.canShare && navigator.canShare({ files })) {
-      await navigator.share({
-        files,
-        title: 'Luchiaro.splitt',
-        text: single ? 'Photo exportée avec Luchiaro.splitt' : 'Morceaux à poster en carrousel — Luchiaro.splitt'
-      });
-    } else {
-      showToast('Le partage direct n\u2019est pas disponible ici — utilise le téléchargement .zip.');
-    }
-  } catch (err) {
-    if (err.name !== 'AbortError') {
-      showToast('Le partage a échoué — utilise le téléchargement .zip à la place.');
-    }
-  } finally {
-    shareBtn.disabled = false;
-    shareBtn.innerHTML = originalText;
-  }
-});
 
 // ---------- PWA : enregistrement du service worker ----------
 if ('serviceWorker' in navigator) {
