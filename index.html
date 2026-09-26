@@ -326,6 +326,12 @@
         <input type="range" id="exifOpacity" min="20" max="100" step="5" value="90">
         <span class="exif-opacity-value" id="exifOpacityValue">90%</span>
       </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Taille</label>
+        <input type="range" id="exifSize" min="50" max="200" step="5" value="100">
+        <span class="exif-opacity-value" id="exifSizeValue">100%</span>
+      </div>
     </div>
 
     <div class="switch-row" id="sigSwitchRow">
@@ -361,6 +367,12 @@
           <option value="bottom-center">Bas centre</option>
           <option value="bottom-right">Bas droite</option>
         </select>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Taille</label>
+        <input type="range" id="sigSize" min="50" max="200" step="5" value="100">
+        <span class="exif-opacity-value" id="sigSizeValue">100%</span>
       </div>
     </div>
 
@@ -440,6 +452,8 @@ const exifStyle = document.getElementById('exifStyle');
 const exifPosition = document.getElementById('exifPosition');
 const exifOpacity = document.getElementById('exifOpacity');
 const exifOpacityValue = document.getElementById('exifOpacityValue');
+const exifSize = document.getElementById('exifSize');
+const exifSizeValue = document.getElementById('exifSizeValue');
 
 const sigSwitchRow = document.getElementById('sigSwitchRow');
 const showSigChk = document.getElementById('showSigChk');
@@ -447,6 +461,8 @@ const sigOptions = document.getElementById('sigOptions');
 const sigText = document.getElementById('sigText');
 const sigScope = document.getElementById('sigScope');
 const sigPosition = document.getElementById('sigPosition');
+const sigSize = document.getElementById('sigSize');
+const sigSizeValue = document.getElementById('sigSizeValue');
 
 const toast = document.getElementById('toast');
 
@@ -483,10 +499,12 @@ function savePrefs() {
       exifStyle: exifStyle.value,
       exifPosition: exifPosition.value,
       exifOpacity: exifOpacity.value,
+      exifSize: exifSize.value,
       sigEnabled: showSigChk.checked,
       sigText: sigText.value,
       sigScope: sigScope.value,
-      sigPosition: sigPosition.value
+      sigPosition: sigPosition.value,
+      sigSize: sigSize.value
     };
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch (err) {
@@ -511,6 +529,10 @@ function loadPrefs() {
       exifOpacity.value = prefs.exifOpacity;
       exifOpacityValue.textContent = `${prefs.exifOpacity}%`;
     }
+    if (prefs.exifSize) {
+      exifSize.value = prefs.exifSize;
+      exifSizeValue.textContent = `${prefs.exifSize}%`;
+    }
     if (typeof prefs.sigEnabled === 'boolean') {
       showSigChk.checked = prefs.sigEnabled;
       sigOptions.classList.toggle('hidden', !prefs.sigEnabled);
@@ -518,6 +540,10 @@ function loadPrefs() {
     if (typeof prefs.sigText === 'string' && prefs.sigText.trim()) sigText.value = prefs.sigText;
     if (prefs.sigScope) sigScope.value = prefs.sigScope;
     if (prefs.sigPosition) sigPosition.value = prefs.sigPosition;
+    if (prefs.sigSize) {
+      sigSize.value = prefs.sigSize;
+      sigSizeValue.textContent = `${prefs.sigSize}%`;
+    }
   } catch (err) {
     // Préférences corrompues ou absentes — on démarre avec les valeurs par défaut, sans casser l'app
   }
@@ -581,6 +607,11 @@ exifOpacity.addEventListener('input', () => {
   savePrefs();
   debouncedRender();
 });
+exifSize.addEventListener('input', () => {
+  exifSizeValue.textContent = `${exifSize.value}%`;
+  savePrefs();
+  debouncedRender();
+});
 
 showSigChk.addEventListener('change', () => {
   sigOptions.classList.toggle('hidden', !showSigChk.checked);
@@ -590,6 +621,11 @@ showSigChk.addEventListener('change', () => {
 sigText.addEventListener('input', () => { debouncedSave(); debouncedRender(); });
 sigScope.addEventListener('change', () => { savePrefs(); renderSplits(); });
 sigPosition.addEventListener('change', () => { savePrefs(); renderSplits(); });
+sigSize.addEventListener('input', () => {
+  sigSizeValue.textContent = `${sigSize.value}%`;
+  savePrefs();
+  debouncedRender();
+});
 
 selectAllBtn.addEventListener('click', () => {
   const allSelected = pieceSelected.every(Boolean);
@@ -815,8 +851,8 @@ function roundRectPath(ctx, x, y, w, h, r) {
 
 function drawOverlayText(ctx, w, h, text, opts) {
   if (!text) return;
-  const { position, opacity, style } = opts;
-  const fontSize = Math.max(13, Math.round(w * 0.032));
+  const { position, opacity, style, scale } = opts;
+  const fontSize = Math.max(10, Math.round(w * 0.032 * (scale || 1)));
   const paddingX = Math.round(w * 0.045);
   const paddingY = Math.round(h * 0.03);
 
@@ -1104,7 +1140,8 @@ function renderSplits() {
       drawOverlayText(ctx, sw, H, exifOverlayText, {
         position: exifPosition.value,
         opacity: parseInt(exifOpacity.value, 10) / 100,
-        style: exifStyle.value
+        style: exifStyle.value,
+        scale: parseInt(exifSize.value, 10) / 100
       });
     }
 
@@ -1115,7 +1152,8 @@ function renderSplits() {
         drawOverlayText(ctx, sw, H, sigOverlayText, {
           position: sigPosition.value,
           opacity: 0.7,
-          style: exifStyle.value
+          style: exifStyle.value,
+          scale: parseInt(sigSize.value, 10) / 100
         });
       }
     }
