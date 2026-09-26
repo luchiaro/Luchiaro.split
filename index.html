@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luchiaro.splitt</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#eef1f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Luchiaro.splitt">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/piexifjs/piexif.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1c1c1e;
+    min-height: 100vh;
+    padding: 40px 18px 80px;
+    overflow-x: hidden;
+    position: relative;
+    background: #eef1f6;
+  }
+
+  /* ---------- Ambient liquid background ---------- */
+  .ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; will-change: transform; }
+  .blob.b1 { width: 480px; height: 480px; background: #ff8a8a; top: -140px; left: -120px; animation: float1 22s ease-in-out infinite; }
+  .blob.b2 { width: 420px; height: 420px; background: #6ea8ff; top: 20%; right: -160px; animation: float2 26s ease-in-out infinite; }
+  .blob.b3 { width: 380px; height: 380px; background: #c58aff; bottom: -120px; left: 10%; animation: float3 24s ease-in-out infinite; }
+  .blob.b4 { width: 320px; height: 320px; background: #5ce0d0; bottom: 5%; right: 8%; animation: float1 30s ease-in-out infinite reverse; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,30px) scale(1.08); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px,40px) scale(0.95); } }
+  @keyframes float3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-40px) scale(1.1); } }
+  @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
+
+  .content { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 34px; }
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.1rem; font-weight: 700; letter-spacing: -0.02em;
+    color: #1c1c1e; display: inline-flex; align-items: baseline; gap: 2px;
+  }
+  .wordmark .dot {
+    color: transparent;
+    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
+    -webkit-background-clip: text; background-clip: text; font-weight: 700;
+  }
+  .tagline { margin-top: 6px; font-size: 0.94rem; color: #55565c; font-weight: 500; }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 26px;
+    box-shadow: 0 8px 32px rgba(31, 41, 60, 0.10), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  .dropzone { padding: 56px 24px; text-align: center; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+  .dropzone:hover { transform: translateY(-2px); }
+  .dropzone.drag { box-shadow: 0 0 0 3px rgba(110,168,255,0.5), 0 8px 32px rgba(31,41,60,0.12); }
+  .dropzone .icon {
+    width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 18px;
+    background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(110,168,255,0.35);
+  }
+  .dropzone .icon svg { width: 26px; height: 26px; }
+  .dropzone strong { font-size: 1.05rem; font-weight: 600; }
+  .dropzone p { margin: 8px 0 0; color: #6b6c72; font-size: 0.88rem; }
+  input[type=file] { display: none; }
+
+  .panel { padding: 22px 22px 24px; margin-top: 18px; }
+  .panel-title {
+    font-size: 0.74rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #7a7b81; margin-bottom: 12px;
+  }
+
+  .segmented { display: flex; background: rgba(120,120,128,0.12); border-radius: 14px; padding: 4px; gap: 4px; }
+  .segmented button {
+    flex: 1; border: none; background: transparent; padding: 9px 10px; border-radius: 10px;
+    font-size: 0.86rem; font-weight: 600; color: #48494e; cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .segmented button.active { background: #ffffff; color: #1c1c1e; box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
+  .segmented button.hidden { display: none; }
+
+  .row-gap { margin-top: 20px; }
+
+  .custom-ratio { display: none; align-items: center; gap: 10px; margin-top: 14px; }
+  .custom-ratio.show { display: flex; }
+  .custom-ratio input {
+    width: 72px; padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.7); font-size: 0.9rem; text-align: center; font-family: inherit;
+  }
+  .custom-ratio span { color: #8a8b91; font-weight: 600; }
+  .custom-ratio label { font-size: 0.8rem; color: #6b6c72; }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+  .switch-row .label-main { font-size: 0.9rem; font-weight: 500; color: #2c2d31; }
+  .switch-row .label-sub { font-size: 0.78rem; color: #7a7b81; margin-top: 2px; }
+  .switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track { position: absolute; inset: 0; background: rgba(120,120,128,0.28); border-radius: 999px; transition: background .2s; cursor: pointer; }
+  .switch .track::before {
+    content: ''; position: absolute; width: 24px; height: 24px; left: 2px; top: 2px;
+    background: white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.25); transition: transform .2s;
+  }
+  .switch input:checked + .track { background: linear-gradient(135deg, #6ea8ff, #c58aff); }
+  .switch input:checked + .track::before { transform: translateX(18px); }
+
+  /* ---------- Réglages EXIF avancés ---------- */
+  .exif-options, .sig-options {
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.07);
+  }
+  .exif-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .exif-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+    background: rgba(120,120,128,0.12); font-size: 0.8rem; font-weight: 600; color: #55565c;
+    cursor: pointer; transition: background .15s, color .15s; user-select: none;
+  }
+  .exif-chip input { display: none; }
+  .exif-chip.active { background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff); color: white; }
+  .exif-subrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .exif-subrow:first-of-type { margin-top: 0; }
+  .exif-subrow-label { font-size: 0.82rem; color: #6b6c72; font-weight: 500; width: 62px; flex-shrink: 0; }
+  .exif-subrow select {
+    flex: 1; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.7); font-size: 0.85rem; font-family: inherit; color: #2c2d31;
+  }
+  .exif-subrow input[type=range] { flex: 1; accent-color: #8a6ef0; }
+  .value-input-wrap { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .value-input {
+    width: 42px; padding: 5px 4px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.7); font-size: 0.78rem; font-family: inherit;
+    text-align: right; color: #2c2d31; -moz-appearance: textfield;
+  }
+  .value-input::-webkit-outer-spin-button, .value-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .value-unit { font-size: 0.78rem; color: #6b6c72; }
+
+  .sig-text-input {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.7); font-size: 0.88rem; font-family: inherit; margin-bottom: 12px; color: #2c2d31;
+  }
+
+  .top-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; padding: 11px 18px; border-radius: 14px;
+    border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: transform .1s, box-shadow .15s, filter .15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.ghost { background: rgba(120,120,128,0.14); color: #3a3b3f; }
+  .btn.ghost:hover { background: rgba(120,120,128,0.22); }
+  .btn.primary { background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff); color: white; box-shadow: 0 6px 18px rgba(110,168,255,0.35); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.wide { width: 100%; justify-content: center; padding: 15px; font-size: 0.96rem; }
+  .btn.small { padding: 7px 14px; font-size: 0.82rem; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .original-wrap { margin-top: 18px; padding: 14px; text-align: center; }
+  .original-wrap img { max-width: 100%; max-height: 300px; border-radius: 16px; display: block; margin: 0 auto; }
+  .filename-tag { margin-top: 10px; font-size: 0.78rem; color: #7a7b81; font-weight: 500; }
+
+  /* ---------- Export ---------- */
+  .download-all { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .download-all .panel-title { margin-bottom: 12px; }
+
+  .select-all-row { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; padding: 0 4px; }
+  .select-all-row .selection-count { font-size: 0.8rem; color: #7a7b81; font-weight: 500; }
+
+  .preview-row { display: flex; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+  .card { flex: 1 1 210px; padding: 12px; text-align: center; position: relative; }
+  .card img { max-width: 100%; border-radius: 12px; display: block; margin: 0 auto 10px; }
+  .card .dims { font-size: 0.76rem; color: #7a7b81; margin-bottom: 10px; font-weight: 500; }
+
+  .card-select { position: absolute; top: 8px; right: 8px; z-index: 2; cursor: pointer; }
+  .card-select input { display: none; }
+  .card-select .mark {
+    width: 24px; height: 24px; border-radius: 8px; background: rgba(255,255,255,0.85);
+    border: 1.5px solid rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
+    transition: background .15s, border-color .15s; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .card-select input:checked + .mark { background: linear-gradient(135deg, #ff8a8a, #6ea8ff, #c58aff); border-color: transparent; }
+  .card-select .mark svg { width: 13px; height: 13px; opacity: 0; transition: opacity .1s; }
+  .card-select input:checked + .mark svg { opacity: 1; }
+
+  /* ---------- Simulation carrousel (swipe) ---------- */
+  .carousel-panel { padding: 22px; margin-top: 18px; }
+  .carousel-phone {
+    max-width: 300px; margin: 4px auto 0; border-radius: 22px; overflow: hidden; position: relative;
+    background: #0c0c0e; aspect-ratio: 4 / 5; box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  }
+  .carousel {
+    display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .carousel::-webkit-scrollbar { display: none; }
+  .carousel .slide { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+  .carousel .slide img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .carousel-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+  .carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); transition: background .2s, transform .2s; }
+  .carousel-dots .dot.active { background: #ffffff; transform: scale(1.35); }
+  .carousel-hint { text-align: center; font-size: 0.78rem; color: #7a7b81; margin-top: 12px; font-weight: 500; }
+
+  .hint { margin-top: 20px; font-size: 0.82rem; color: #5a5b60; line-height: 1.55; padding: 15px 17px; }
+  .hidden { display: none !important; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 480px) { .wordmark { font-size: 1.7rem; } }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(12px);
+    max-width: 88%; padding: 13px 20px; border-radius: 14px; background: rgba(28,28,30,0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fff; font-size: 0.86rem;
+    font-weight: 500; text-align: center; z-index: 50; opacity: 0;
+    transition: opacity .25s ease, transform .25s ease; pointer-events: none; box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="ambient">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+</div>
+
+<div class="content">
+  <header>
+    <div class="wordmark">Luchiaro<span class="dot">.</span>splitt</div>
+    <div class="tagline">Découpe tes photos en portraits, sans perte de qualité.</div>
+  </header>
+
+  <div class="glass dropzone" id="dropzone">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+      </svg>
+    </div>
+    <strong>Dépose une image ici, ou clique</strong>
+    <p>JPG, PNG, WebP — tout se passe dans ton navigateur, rien n'est envoyé nulle part</p>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="glass original-wrap hidden" id="originalWrap">
+    <img id="originalImg" alt="Aperçu original">
+    <div class="filename-tag" id="filenameTag"></div>
+  </div>
+
+  <div class="glass panel hidden" id="controls">
+    <div class="panel-title">Nombre de morceaux</div>
+    <div class="segmented" id="pieceSeg">
+      <button data-val="1">1</button>
+      <button data-val="2" class="active">2</button>
+      <button data-val="3">3</button>
+      <button data-val="4">4</button>
+    </div>
+
+    <div class="row-gap">
+      <div class="panel-title">Format de sortie</div>
+      <div class="segmented" id="ratioSeg">
+        <button data-val="original" class="active">Original</button>
+        <button data-val="0.8">4:5</button>
+        <button data-val="0.5625">9:16</button>
+        <button data-val="1">1:1</button>
+        <button data-val="custom">Perso</button>
+      </div>
+      <div class="custom-ratio" id="customRatioRow">
+        <label>Largeur</label>
+        <input type="number" id="customW" value="4" min="1" step="0.1">
+        <span>:</span>
+        <label>Hauteur</label>
+        <input type="number" id="customH" value="5" min="1" step="0.1">
+      </div>
+    </div>
+
+    <div class="switch-row hidden" id="exifSwitchRow">
+      <div>
+        <div class="label-main">Afficher les réglages photo</div>
+        <div class="label-sub">Incruste focale, ouverture, vitesse et ISO dans un coin</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="showExifChk">
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <div class="exif-options hidden" id="exifOptions">
+      <div class="exif-fields" id="exifFieldsRow"></div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Style</label>
+        <select id="exifStyle">
+          <option value="minimal" selected>Minimaliste</option>
+          <option value="mono">Technique / Terminal</option>
+          <option value="badge">Badge / Cartouche</option>
+        </select>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Position</label>
+        <select id="exifPosition">
+          <option value="top-left">Haut gauche</option>
+          <option value="top-center">Haut centre</option>
+          <option value="top-right">Haut droite</option>
+          <option value="bottom-left">Bas gauche</option>
+          <option value="bottom-center">Bas centre</option>
+          <option value="bottom-right" selected>Bas droite</option>
+        </select>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Opacité</label>
+        <input type="range" id="exifOpacity" min="20" max="100" step="5" value="90">
+        <span class="value-input-wrap">
+          <input type="number" class="value-input" id="exifOpacityValue" min="20" max="100" value="90">
+          <span class="value-unit">%</span>
+        </span>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Taille</label>
+        <input type="range" id="exifSize" min="50" max="200" step="5" value="100">
+        <span class="value-input-wrap">
+          <input type="number" class="value-input" id="exifSizeValue" min="50" max="200" value="100">
+          <span class="value-unit">%</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="switch-row" id="sigSwitchRow">
+      <div>
+        <div class="label-main">Ajouter une signature</div>
+        <div class="label-sub">Incruste discrètement ton pseudo sur les exports</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="showSigChk">
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <div class="sig-options hidden" id="sigOptions">
+      <input type="text" id="sigText" class="sig-text-input" placeholder="@luchia.raw" value="@luchia.raw">
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Sur</label>
+        <select id="sigScope">
+          <option value="first">Première slide</option>
+          <option value="last" selected>Dernière slide</option>
+          <option value="all">Toutes les slides</option>
+        </select>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Position</label>
+        <select id="sigPosition">
+          <option value="top-left">Haut gauche</option>
+          <option value="top-center">Haut centre</option>
+          <option value="top-right">Haut droite</option>
+          <option value="bottom-left" selected>Bas gauche</option>
+          <option value="bottom-center">Bas centre</option>
+          <option value="bottom-right">Bas droite</option>
+        </select>
+      </div>
+
+      <div class="exif-subrow">
+        <label class="exif-subrow-label">Taille</label>
+        <input type="range" id="sigSize" min="50" max="200" step="5" value="100">
+        <span class="value-input-wrap">
+          <input type="number" class="value-input" id="sigSizeValue" min="50" max="200" value="100">
+          <span class="value-unit">%</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn ghost" id="resetBtn">↺ Changer d'image</button>
+    </div>
+  </div>
+
+  <div class="download-all hidden" id="downloadAllWrap">
+    <div class="panel-title">Format d'export</div>
+    <div class="segmented" id="formatSeg">
+      <button data-val="png" class="active">PNG</button>
+      <button data-val="jpeg">JPEG</button>
+      <button data-val="webp">WebP</button>
+    </div>
+    <button class="btn primary wide" id="shareBtn" style="margin-top: 14px;">📤 Enregistrer</button>
+  </div>
+
+  <div class="select-all-row hidden" id="selectAllRow">
+    <span class="selection-count" id="selectionCount"></span>
+    <button class="btn ghost small" id="selectAllBtn">Tout désélectionner</button>
+  </div>
+
+  <div class="preview-row" id="previewRow"></div>
+
+  <div class="glass carousel-panel hidden" id="carouselPanel">
+    <div class="panel-title" id="carouselPanelTitle">Simulation carrousel (swipe)</div>
+    <div class="carousel-phone" id="carouselPhone">
+      <div class="carousel" id="carousel"></div>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+    <div class="carousel-hint" id="carouselHint">Glisse pour prévisualiser l'effet carrousel Instagram</div>
+  </div>
+
+  <p class="glass hint hidden" id="hint"></p>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+// ==================== Références DOM ====================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const controls = document.getElementById('controls');
+const originalWrap = document.getElementById('originalWrap');
+const originalImg = document.getElementById('originalImg');
+const filenameTag = document.getElementById('filenameTag');
+const previewRow = document.getElementById('previewRow');
+const pieceSeg = document.getElementById('pieceSeg');
+const ratioSeg = document.getElementById('ratioSeg');
+const customRatioRow = document.getElementById('customRatioRow');
+const customW = document.getElementById('customW');
+const customH = document.getElementById('customH');
+const resetBtn = document.getElementById('resetBtn');
+const hint = document.getElementById('hint');
+
+const downloadAllWrap = document.getElementById('downloadAllWrap');
+const formatSeg = document.getElementById('formatSeg');
+const shareBtn = document.getElementById('shareBtn');
+
+const selectAllRow = document.getElementById('selectAllRow');
+const selectAllBtn = document.getElementById('selectAllBtn');
+const selectionCount = document.getElementById('selectionCount');
+
+const carouselPanel = document.getElementById('carouselPanel');
+const carouselPhone = document.getElementById('carouselPhone');
+const carousel = document.getElementById('carousel');
+const carouselDots = document.getElementById('carouselDots');
+const carouselHint = document.getElementById('carouselHint');
+const carouselPanelTitle = document.getElementById('carouselPanelTitle');
+
+const exifSwitchRow = document.getElementById('exifSwitchRow');
+const showExifChk = document.getElementById('showExifChk');
+const exifOptions = document.getElementById('exifOptions');
+const exifFieldsRow = document.getElementById('exifFieldsRow');
+const exifStyle = document.getElementById('exifStyle');
+const exifPosition = document.getElementById('exifPosition');
+const exifOpacity = document.getElementById('exifOpacity');
+const exifOpacityValue = document.getElementById('exifOpacityValue');
+const exifSize = document.getElementById('exifSize');
+const exifSizeValue = document.getElementById('exifSizeValue');
+
+const sigSwitchRow = document.getElementById('sigSwitchRow');
+const showSigChk = document.getElementById('showSigChk');
+const sigOptions = document.getElementById('sigOptions');
+const sigText = document.getElementById('sigText');
+const sigScope = document.getElementById('sigScope');
+const sigPosition = document.getElementById('sigPosition');
+const sigSize = document.getElementById('sigSize');
+const sigSizeValue = document.getElementById('sigSizeValue');
+
+const toast = document.getElementById('toast');
+
+// ==================== État global ====================
+let currentImage = null;
+let currentFilename = 'photo';
+let currentCanvases = [];
+let pieceSelected = [];
+let pieceCount = 2;
+let ratioMode = 'original';
+let currentFormat = 'png';
+
+let currentExifData = null;
+let exifFieldsEnabled = {};
+
+// Données pour la préservation du profil colorimétrique (JPEG uniquement)
+let originalIsJpeg = false;
+let originalExifObj = null;
+let originalIccSegments = [];
+
+function debounce(fn, wait) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+const debouncedRender = debounce(() => renderSplits(), 80);
+
+// ==================== Préférences (localStorage) ====================
+const PREFS_KEY = 'luchiaro-splitt-prefs';
+
+function savePrefs() {
+  try {
+    const prefs = {
+      format: currentFormat,
+      exifStyle: exifStyle.value,
+      exifPosition: exifPosition.value,
+      exifOpacity: exifOpacity.value,
+      exifSize: exifSize.value,
+      sigEnabled: showSigChk.checked,
+      sigText: sigText.value,
+      sigScope: sigScope.value,
+      sigPosition: sigPosition.value,
+      sigSize: sigSize.value
+    };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch (err) {
+    // localStorage indisponible (navigation privée stricte, quota dépassé…) — pas bloquant
+  }
+}
+const debouncedSave = debounce(savePrefs, 250);
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return;
+    const prefs = JSON.parse(raw);
+
+    if (prefs.format && ['png', 'jpeg', 'webp'].includes(prefs.format)) {
+      currentFormat = prefs.format;
+      [...formatSeg.children].forEach((b) => b.classList.toggle('active', b.dataset.val === prefs.format));
+    }
+    if (prefs.exifStyle) exifStyle.value = prefs.exifStyle;
+    if (prefs.exifPosition) exifPosition.value = prefs.exifPosition;
+    if (prefs.exifOpacity) {
+      exifOpacity.value = prefs.exifOpacity;
+      exifOpacityValue.value = prefs.exifOpacity;
+    }
+    if (prefs.exifSize) {
+      exifSize.value = prefs.exifSize;
+      exifSizeValue.value = prefs.exifSize;
+    }
+    if (typeof prefs.sigEnabled === 'boolean') {
+      showSigChk.checked = prefs.sigEnabled;
+      sigOptions.classList.toggle('hidden', !prefs.sigEnabled);
+    }
+    if (typeof prefs.sigText === 'string' && prefs.sigText.trim()) sigText.value = prefs.sigText;
+    if (prefs.sigScope) sigScope.value = prefs.sigScope;
+    if (prefs.sigPosition) sigPosition.value = prefs.sigPosition;
+    if (prefs.sigSize) {
+      sigSize.value = prefs.sigSize;
+      sigSizeValue.value = prefs.sigSize;
+    }
+  } catch (err) {
+    // Préférences corrompues ou absentes — on démarre avec les valeurs par défaut, sans casser l'app
+  }
+}
+window.addEventListener('DOMContentLoaded', loadPrefs);
+
+// ==================== Dropzone / import ====================
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+resetBtn.addEventListener('click', () => location.reload());
+
+pieceSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...pieceSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  pieceCount = parseInt(btn.dataset.val, 10);
+  renderSplits();
+});
+
+ratioSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...ratioSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ratioMode = btn.dataset.val;
+  customRatioRow.classList.toggle('show', ratioMode === 'custom');
+  renderSplits();
+});
+
+customW.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+customH.addEventListener('input', () => { if (ratioMode === 'custom') renderSplits(); });
+
+formatSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...formatSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFormat = btn.dataset.val;
+  savePrefs();
+});
+
+// Lie un slider à son champ numérique : les deux restent synchronisés, et on
+// peut taper une valeur précise directement (plus fin que le pas du slider).
+function linkRangeToNumberInput(rangeEl, numberEl) {
+  const min = parseFloat(rangeEl.min);
+  const max = parseFloat(rangeEl.max);
+
+  rangeEl.addEventListener('input', () => {
+    numberEl.value = rangeEl.value;
+    savePrefs();
+    debouncedRender();
+  });
+
+  numberEl.addEventListener('input', () => {
+    const v = parseFloat(numberEl.value);
+    // On ne répercute que les valeurs déjà valides pendant la frappe, pour ne
+    // pas faire sauter le slider/l'aperçu tant que le nombre est incomplet.
+    if (!Number.isNaN(v) && v >= min && v <= max) {
+      rangeEl.value = v;
+      savePrefs();
+      debouncedRender();
+    }
+  });
+
+  numberEl.addEventListener('blur', () => {
+    let v = parseFloat(numberEl.value);
+    if (Number.isNaN(v)) v = parseFloat(rangeEl.value);
+    v = Math.min(max, Math.max(min, Math.round(v)));
+    numberEl.value = v;
+    rangeEl.value = v;
+    savePrefs();
+    debouncedRender();
+  });
+}
+
+showExifChk.addEventListener('change', () => {
+  exifOptions.classList.toggle('hidden', !showExifChk.checked);
+  if (showExifChk.checked) renderExifFieldsUI();
+  renderSplits();
+});
+exifStyle.addEventListener('change', () => { savePrefs(); renderSplits(); });
+exifPosition.addEventListener('change', () => { savePrefs(); renderSplits(); });
+linkRangeToNumberInput(exifOpacity, exifOpacityValue);
+linkRangeToNumberInput(exifSize, exifSizeValue);
+
+showSigChk.addEventListener('change', () => {
+  sigOptions.classList.toggle('hidden', !showSigChk.checked);
+  savePrefs();
+  renderSplits();
+});
+sigText.addEventListener('input', () => { debouncedSave(); debouncedRender(); });
+sigScope.addEventListener('change', () => { savePrefs(); renderSplits(); });
+sigPosition.addEventListener('change', () => { savePrefs(); renderSplits(); });
+linkRangeToNumberInput(sigSize, sigSizeValue);
+
+selectAllBtn.addEventListener('click', () => {
+  const allSelected = pieceSelected.every(Boolean);
+  const newState = !allSelected;
+  pieceSelected = pieceSelected.map(() => newState);
+  previewRow.querySelectorAll('.piece-checkbox').forEach((cb) => { cb.checked = newState; });
+  updateSelectAllUI();
+  updateShareButtonState();
+});
+
+// ==================== Import fichier ====================
+function handleFile(file) {
+  if (!file || !file.type || !file.type.startsWith('image/')) return;
+  currentFilename = (file.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
+  resetExifState();
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    readExif(file);
+    initColorProfileData(file, dataUrl);
+
+    const img = new Image();
+    img.onload = () => {
+      currentImage = img;
+      originalImg.src = dataUrl;
+      filenameTag.textContent = `${file.name || 'image partagée'} — ${img.naturalWidth}×${img.naturalHeight}px`;
+      dropzone.classList.add('hidden');
+      controls.classList.remove('hidden');
+      originalWrap.classList.remove('hidden');
+      hint.classList.remove('hidden');
+      renderSplits();
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== EXIF (réglages photo affichés) ====================
+const EXIF_FIELDS = [
+  { key: 'model', label: 'Modèle' },
+  { key: 'focal', label: 'Focale' },
+  { key: 'fnum', label: 'Ouverture' },
+  { key: 'exposure', label: 'Vitesse' },
+  { key: 'iso', label: 'ISO' },
+  { key: 'location', label: 'Localisation' }
+];
+const EXIF_DEFAULT_ENABLED = { model: true, focal: true, fnum: true, exposure: true, iso: true, location: false };
+
+function resetExifState() {
+  currentExifData = null;
+  exifFieldsEnabled = {};
+  showExifChk.checked = false;
+  exifSwitchRow.classList.add('hidden');
+  exifOptions.classList.add('hidden');
+  exifFieldsRow.innerHTML = '';
+}
+
+function roundClean(n) {
+  const r = Math.round(n * 10) / 10;
+  return r % 1 === 0 ? r.toFixed(0) : r.toFixed(1);
+}
+
+function formatExposure(e) {
+  if (!e || e <= 0) return '';
+  if (e >= 1) return `${roundClean(e)}s`;
+  const denom = Math.round(1 / e);
+  return `1/${denom}s`;
+}
+
+function formatCamera(make, model) {
+  make = (make || '').trim();
+  model = (model || '').trim();
+  if (!make && !model) return '';
+  if (!model) return make;
+  if (!make) return model;
+  if (model.toLowerCase().startsWith(make.toLowerCase())) return model;
+  return `${make} ${model}`;
+}
+
+function gpsToDecimal(dms, ref) {
+  if (!dms || dms.length < 3) return null;
+  let dec = dms[0] + dms[1] / 60 + dms[2] / 3600;
+  if (ref === 'S' || ref === 'W') dec = -dec;
+  return dec;
+}
+
+function formatCoords(lat, lon) {
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lonDir = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}`;
+}
+
+async function resolveLocationText(lat, lon) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('geocode failed');
+    const data = await res.json();
+    const addr = data.address || {};
+    const city = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+    const country = addr.country;
+    const text = city && country ? `${city}, ${country}` : (city || country || null);
+    if (text && currentExifData) {
+      currentExifData.locationText = text;
+      if (showExifChk.checked && exifFieldsEnabled.location) renderSplits();
+    }
+  } catch (err) {
+    // Pas de réseau, timeout, ou service indisponible — on garde les coordonnées brutes en repli
+  }
+}
+
+function readExif(file) {
+  if (typeof EXIF === 'undefined') return; // CDN indisponible (hors-ligne) — pas bloquant
+  try {
+    EXIF.getData(file, function () {
+      const focal = EXIF.getTag(this, 'FocalLength');
+      const fnum = EXIF.getTag(this, 'FNumber');
+      const exposure = EXIF.getTag(this, 'ExposureTime');
+      const iso = EXIF.getTag(this, 'ISOSpeedRatings') || EXIF.getTag(this, 'PhotographicSensitivity');
+      const model = formatCamera(EXIF.getTag(this, 'Make'), EXIF.getTag(this, 'Model'));
+
+      const gpsLat = EXIF.getTag(this, 'GPSLatitude');
+      const gpsLatRef = EXIF.getTag(this, 'GPSLatitudeRef');
+      const gpsLon = EXIF.getTag(this, 'GPSLongitude');
+      const gpsLonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+      let lat = null, lon = null;
+      if (gpsLat && gpsLon) {
+        lat = gpsToDecimal(gpsLat, gpsLatRef);
+        lon = gpsToDecimal(gpsLon, gpsLonRef);
+      }
+
+      const hasAnything = model || focal || fnum || exposure || iso || lat != null;
+      if (!hasAnything) return;
+
+      currentExifData = {
+        model: model || null,
+        focal: focal || null,
+        fnum: fnum || null,
+        exposure: exposure || null,
+        iso: iso || null,
+        lat, lon,
+        locationRaw: lat != null ? formatCoords(lat, lon) : null,
+        locationText: null
+      };
+      exifSwitchRow.classList.remove('hidden');
+
+      if (lat != null) resolveLocationText(lat, lon);
+    });
+  } catch (err) {
+    // Image sans EXIF exploitable, format non supporté (ex: certains WebP/PNG) — silencieux
+  }
+}
+
+function fieldHasData(key) {
+  if (!currentExifData) return false;
+  switch (key) {
+    case 'model': return !!currentExifData.model;
+    case 'focal': return !!currentExifData.focal;
+    case 'fnum': return !!currentExifData.fnum;
+    case 'exposure': return !!currentExifData.exposure;
+    case 'iso': return !!currentExifData.iso;
+    case 'location': return currentExifData.lat != null;
+    default: return false;
+  }
+}
+
+function renderExifFieldsUI() {
+  exifFieldsRow.innerHTML = '';
+  EXIF_FIELDS.forEach((f) => {
+    if (!fieldHasData(f.key)) return;
+    if (!(f.key in exifFieldsEnabled)) exifFieldsEnabled[f.key] = EXIF_DEFAULT_ENABLED[f.key];
+
+    const chip = document.createElement('label');
+    chip.className = 'exif-chip' + (exifFieldsEnabled[f.key] ? ' active' : '');
+    chip.innerHTML = `<input type="checkbox" ${exifFieldsEnabled[f.key] ? 'checked' : ''}> ${f.label}`;
+    const input = chip.querySelector('input');
+    input.addEventListener('change', () => {
+      exifFieldsEnabled[f.key] = input.checked;
+      chip.classList.toggle('active', input.checked);
+      renderSplits();
+    });
+    exifFieldsRow.appendChild(chip);
+  });
+}
+
+function buildExifOverlayText() {
+  if (!currentExifData) return '';
+  const parts = [];
+  if (exifFieldsEnabled.model && currentExifData.model) parts.push(currentExifData.model);
+  if (exifFieldsEnabled.focal && currentExifData.focal) parts.push(`${Math.round(currentExifData.focal)}mm`);
+  if (exifFieldsEnabled.fnum && currentExifData.fnum) parts.push(`f/${roundClean(currentExifData.fnum)}`);
+  if (exifFieldsEnabled.exposure) {
+    const exp = formatExposure(currentExifData.exposure);
+    if (exp) parts.push(exp);
+  }
+  if (exifFieldsEnabled.iso && currentExifData.iso) parts.push(`ISO ${currentExifData.iso}`);
+  if (exifFieldsEnabled.location && (currentExifData.locationText || currentExifData.locationRaw)) {
+    parts.push(currentExifData.locationText || currentExifData.locationRaw);
+  }
+  return parts.join(' · ');
+}
+
+// ==================== Rendu texte incrusté (EXIF + signature) ====================
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawOverlayText(ctx, w, h, text, opts) {
+  if (!text) return;
+  const { position, opacity, style, scale } = opts;
+  const fontSize = Math.max(10, Math.round(w * 0.032 * (scale || 1)));
+  const paddingX = Math.round(w * 0.045);
+  const paddingY = Math.round(h * 0.03);
+
+  ctx.save();
+
+  let fontDecl, textColor, useBadge = false;
+  if (style === 'mono') {
+    fontDecl = `500 ${fontSize}px 'Space Mono', ui-monospace, 'Courier New', monospace`;
+    textColor = [124, 255, 178];
+  } else if (style === 'badge') {
+    fontDecl = `600 ${fontSize}px 'Inter', -apple-system, sans-serif`;
+    textColor = [255, 255, 255];
+    useBadge = true;
+  } else {
+    fontDecl = `600 ${fontSize}px 'Inter', -apple-system, BlinkMacSystemFont, sans-serif`;
+    textColor = [255, 255, 255];
+  }
+
+  ctx.font = fontDecl;
+  const textWidth = ctx.measureText(text).width;
+
+  const isTop = position.startsWith('top');
+  const isLeft = position.endsWith('left');
+  const isCenter = position.endsWith('center');
+
+  let align, anchorX;
+  if (isLeft) { align = 'left'; anchorX = paddingX; }
+  else if (isCenter) { align = 'center'; anchorX = w / 2; }
+  else { align = 'right'; anchorX = w - paddingX; }
+
+  const anchorY = isTop ? paddingY + fontSize : h - paddingY;
+
+  if (useBadge) {
+    const padX = fontSize * 0.55;
+    const padY = fontSize * 0.42;
+    const badgeW = textWidth + padX * 2;
+    const badgeH = fontSize + padY * 2;
+    let badgeX;
+    if (align === 'left') badgeX = anchorX - padX;
+    else if (align === 'center') badgeX = anchorX - badgeW / 2;
+    else badgeX = anchorX - textWidth - padX;
+    const badgeY = isTop ? anchorY - fontSize - padY + fontSize * 0.12 : anchorY - fontSize - padY + fontSize * 0.08;
+
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = 'rgba(8,8,12,0.75)';
+    roundRectPath(ctx, badgeX, badgeY, badgeW, badgeH, Math.min(14, badgeH * 0.3));
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  const alphaHex = Math.round(opacity * 255).toString(16).padStart(2, '0');
+  const colorHex = textColor.map((c) => c.toString(16).padStart(2, '0')).join('');
+  ctx.fillStyle = `#${colorHex}${alphaHex}`;
+
+  if (!useBadge) {
+    ctx.shadowColor = `rgba(0,0,0,${(opacity * 0.6).toFixed(2)})`;
+    ctx.shadowBlur = fontSize * 0.6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = fontSize * 0.1;
+  }
+
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, anchorX, anchorY);
+  ctx.restore();
+}
+
+// ==================== Préservation du profil colorimétrique (JPEG) ====================
+function binaryStringToUint8(str) {
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+  return bytes;
+}
+
+function uint8ToBinaryString(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return binary;
+}
+
+function concatUint8Arrays(arrays) {
+  let total = 0;
+  arrays.forEach((a) => { total += a.length; });
+  const result = new Uint8Array(total);
+  let pos = 0;
+  arrays.forEach((a) => { result.set(a, pos); pos += a.length; });
+  return result;
+}
+
+// Extrait les segments APP2 "ICC_PROFILE" bruts d'un JPEG (tels quels, prêts à réinjecter)
+function extractIccSegments(bytes) {
+  const segments = [];
+  if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return segments;
+  let offset = 2;
+  while (offset < bytes.length - 1) {
+    if (bytes[offset] !== 0xFF) break;
+    const marker = bytes[offset + 1];
+    if (marker === 0xD8 || marker === 0xD9 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+      offset += 2;
+      continue;
+    }
+    if (marker === 0xDA) break; // Start of Scan — fin des segments d'en-tête
+    if (offset + 4 > bytes.length) break;
+    const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+    const segmentEnd = offset + 2 + length;
+    if (marker === 0xE2 && length >= 14) {
+      let sig = '';
+      for (let k = 0; k < 11; k++) sig += String.fromCharCode(bytes[offset + 4 + k]);
+      if (sig === 'ICC_PROFILE') segments.push(bytes.slice(offset, segmentEnd));
+    }
+    offset = segmentEnd;
+  }
+  return segments;
+}
+
+// Réinjecte des segments APP2 ICC juste après SOI (+ APP0/APP1 existants) dans un JPEG
+function insertIccSegments(bytes, iccSegments) {
+  if (!iccSegments.length) return bytes;
+  let offset = 2;
+  while (offset < bytes.length - 3) {
+    if (bytes[offset] !== 0xFF) break;
+    const marker = bytes[offset + 1];
+    if (marker === 0xE0 || marker === 0xE1) {
+      const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      offset += 2 + length;
+    } else {
+      break;
+    }
+  }
+  const before = bytes.slice(0, offset);
+  const after = bytes.slice(offset);
+  const iccBytes = concatUint8Arrays(iccSegments);
+  return concatUint8Arrays([before, iccBytes, after]);
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function dataURLToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+// Lit l'EXIF binaire (pour piexif) + les segments ICC du fichier original importé
+function initColorProfileData(file, dataUrl) {
+  originalIsJpeg = file.type === 'image/jpeg' || file.type === 'image/jpg';
+  originalExifObj = null;
+  originalIccSegments = [];
+  if (!originalIsJpeg) return;
+
+  try {
+    if (typeof piexif !== 'undefined') {
+      originalExifObj = piexif.load(dataUrl);
+    }
+  } catch (err) {
+    originalExifObj = null; // Pas d'EXIF exploitable — pas bloquant
+  }
+
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const bytes = binaryStringToUint8(atob(base64));
+    originalIccSegments = extractIccSegments(bytes);
+  } catch (err) {
+    originalIccSegments = []; // Pas de profil ICC détecté — pas bloquant
+  }
+}
+
+// Exporte un canvas en JPEG en réinjectant EXIF + profil ICC de la photo d'origine
+async function exportJpegWithColorProfile(canvas) {
+  const baseBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.95));
+  if (!originalIsJpeg || (!originalExifObj && !originalIccSegments.length)) return baseBlob;
+
+  try {
+    let dataUrl = await blobToDataURL(baseBlob);
+
+    if (originalExifObj && typeof piexif !== 'undefined') {
+      try {
+        const exifBytes = piexif.dump(originalExifObj);
+        dataUrl = piexif.insert(exifBytes, dataUrl);
+      } catch (err) {
+        // Réinjection EXIF impossible (structure incompatible) — on continue sans, l'ICC reste tenté
+      }
+    }
+
+    if (originalIccSegments.length) {
+      const base64 = dataUrl.split(',')[1];
+      const bytes = binaryStringToUint8(atob(base64));
+      const withIcc = insertIccSegments(bytes, originalIccSegments);
+      const newBinary = uint8ToBinaryString(withIcc);
+      dataUrl = 'data:image/jpeg;base64,' + btoa(newBinary);
+    }
+
+    return dataURLToBlob(dataUrl);
+  } catch (err) {
+    console.warn('Réinjection du profil colorimétrique impossible, export JPEG standard utilisé.', err);
+    return baseBlob; // Repli : jamais bloquant pour l'utilisateur
+  }
+}
+
+// ==================== Découpe & rendu ====================
+function getTargetRatio() {
+  if (ratioMode === 'original') return 'original';
+  if (ratioMode === 'custom') {
+    const w = parseFloat(customW.value) || 1;
+    const h = parseFloat(customH.value) || 1;
+    return w / h;
+  }
+  return parseFloat(ratioMode);
+}
+
+function getWorkingCanvas(targetRatio, n) {
+  const W = currentImage.naturalWidth;
+  const H = currentImage.naturalHeight;
+
+  if (targetRatio === 'original') {
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    c.getContext('2d').drawImage(currentImage, 0, 0);
+    return c;
+  }
+
+  const idealTotalW = n * targetRatio * H;
+  const c = document.createElement('canvas');
+  if (idealTotalW <= W) {
+    const cropW = idealTotalW;
+    const sx = (W - cropW) / 2;
+    c.width = cropW;
+    c.height = H;
+    c.getContext('2d').drawImage(currentImage, sx, 0, cropW, H, 0, 0, cropW, H);
+  } else {
+    const cropH = W / (n * targetRatio);
+    const sy = (H - cropH) / 2;
+    c.width = W;
+    c.height = cropH;
+    c.getContext('2d').drawImage(currentImage, 0, sy, W, cropH, 0, 0, W, cropH);
+  }
+  return c;
+}
+
+function renderSplits() {
+  if (!currentImage) return;
+  previewRow.innerHTML = '';
+  currentCanvases = [];
+
+  const n = pieceCount;
+  const targetRatio = getTargetRatio();
+
+  const workingCanvas = getWorkingCanvas(targetRatio, n);
+  const W = workingCanvas.width;
+  const H = workingCanvas.height;
+  const baseSliceW = W / n;
+
+  const exifOverlayText = (showExifChk.checked && currentExifData) ? buildExifOverlayText() : '';
+  const sigOverlayText = (showSigChk.checked && sigText.value.trim()) ? sigText.value.trim() : '';
+
+  pieceSelected = new Array(n).fill(true);
+
+  let cursor = 0;
+  for (let i = 0; i < n; i++) {
+    const sx = cursor;
+    const nextCursor = i === n - 1 ? W : Math.round((i + 1) * baseSliceW);
+    const sw = nextCursor - sx;
+    cursor = nextCursor;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = sw;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(workingCanvas, sx, 0, sw, H, 0, 0, sw, H);
+
+    if (i === n - 1 && exifOverlayText) {
+      drawOverlayText(ctx, sw, H, exifOverlayText, {
+        position: exifPosition.value,
+        opacity: parseInt(exifOpacity.value, 10) / 100,
+        style: exifStyle.value,
+        scale: parseInt(exifSize.value, 10) / 100
+      });
+    }
+
+    if (sigOverlayText) {
+      const scope = sigScope.value;
+      const shouldDraw = scope === 'all' || (scope === 'first' && i === 0) || (scope === 'last' && i === n - 1);
+      if (shouldDraw) {
+        drawOverlayText(ctx, sw, H, sigOverlayText, {
+          position: sigPosition.value,
+          opacity: 0.7,
+          style: exifStyle.value,
+          scale: parseInt(sigSize.value, 10) / 100
+        });
+      }
+    }
+
+    currentCanvases.push(canvas);
+
+    const card = document.createElement('div');
+    card.className = 'glass card';
+
+    if (n > 1) {
+      const selectWrap = document.createElement('label');
+      selectWrap.className = 'card-select';
+      selectWrap.innerHTML = `
+        <input type="checkbox" class="piece-checkbox" checked>
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      `;
+      const checkboxInput = selectWrap.querySelector('input');
+      checkboxInput.addEventListener('change', () => {
+        pieceSelected[i] = checkboxInput.checked;
+        updateSelectAllUI();
+        updateShareButtonState();
+      });
+      card.appendChild(selectWrap);
+    }
+
+    const imgPrev = document.createElement('img');
+    imgPrev.src = canvas.toDataURL('image/png');
+
+    const dims = document.createElement('div');
+    dims.className = 'dims';
+    dims.textContent = `${sw} × ${H} px`;
+
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'btn ghost';
+    dlBtn.textContent = n === 1 ? '⬇ Télécharger' : `⬇ Partie ${i + 1}/${n}`;
+    dlBtn.onclick = async () => await downloadSingleImage(canvas, n === 1 ? currentFilename : `${currentFilename}_part${i + 1}`, currentFormat);
+
+    card.appendChild(imgPrev);
+    card.appendChild(dims);
+    card.appendChild(dlBtn);
+    previewRow.appendChild(card);
+  }
+
+  downloadAllWrap.classList.remove('hidden');
+  selectAllRow.classList.toggle('hidden', n === 1);
+  updateSelectAllUI();
+  updateShareButtonState();
+  renderCarousel();
+
+  let ratioLabel;
+  if (targetRatio === 'original') {
+    ratioLabel = 'sans recadrage';
+  } else {
+    const activeBtn = ratioSeg.querySelector('.active');
+    const label = ratioMode === 'custom' ? `${customW.value}:${customH.value}` : activeBtn.textContent;
+    ratioLabel = `recadré en ${label}`;
+  }
+  if (n === 1) {
+    hint.textContent = `Image finale : ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité.`;
+  } else {
+    hint.textContent = `Chaque morceau fait environ ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
+  }
+}
+
+function updateSelectAllUI() {
+  const total = pieceSelected.length;
+  const selected = pieceSelected.filter(Boolean).length;
+  selectionCount.textContent = `${selected}/${total} sélectionné${total > 1 ? 's' : ''}`;
+  const allSelected = pieceSelected.every(Boolean);
+  selectAllBtn.textContent = allSelected ? 'Tout désélectionner' : 'Tout sélectionner';
+}
+
+function updateShareButtonState() {
+  const anySelected = pieceSelected.some(Boolean);
+  shareBtn.disabled = !anySelected;
+}
+
+// ==================== Simulation carrousel (swipe) ====================
+function renderCarousel() {
+  carousel.innerHTML = '';
+  carouselDots.innerHTML = '';
+
+  if (!currentCanvases.length) {
+    carouselPanel.classList.add('hidden');
+    return;
+  }
+  carouselPanel.classList.remove('hidden');
+
+  const first = currentCanvases[0];
+  carouselPhone.style.aspectRatio = `${first.width} / ${first.height}`;
+
+  const single = currentCanvases.length === 1;
+
+  currentCanvases.forEach((canvas, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'slide';
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.alt = single ? 'Aperçu' : `Morceau ${i + 1}`;
+    slide.appendChild(img);
+    carousel.appendChild(slide);
+
+    if (!single) {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      carouselDots.appendChild(dot);
+    }
+  });
+
+  carousel.scrollLeft = 0;
+  carousel.style.overflowX = single ? 'hidden' : 'auto';
+  carouselPanelTitle.textContent = single ? 'Aperçu de l\u2019export' : 'Simulation carrousel (swipe)';
+  carouselHint.textContent = single
+    ? 'Image unique — pas de découpe'
+    : 'Glisse pour prévisualiser l\u2019effet carrousel Instagram';
+
+  if (!single) {
+    const dots = [...carouselDots.children];
+    carousel.onscroll = () => {
+      const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    };
+  } else {
+    carousel.onscroll = null;
+  }
+}
+
+// ==================== Export / téléchargement ====================
+function extFor(format) {
+  return format === 'jpeg' ? 'jpg' : format === 'webp' ? 'webp' : 'png';
+}
+
+async function blobFor(canvas, format) {
+  if (format === 'jpeg') return exportJpegWithColorProfile(canvas);
+  const mime = format === 'webp' ? 'image/webp' : 'image/png';
+  return new Promise((resolve) => canvas.toBlob(resolve, mime));
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 50);
+}
+
+async function downloadSingleImage(canvas, name, format) {
+  const blob = await blobFor(canvas, format);
+  triggerDownload(blob, `${name}.${extFor(format)}`);
+}
+
+let toastTimeout;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  requestAnimationFrame(() => toast.classList.add('show'));
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.classList.add('hidden'), 300);
+  }, 3200);
+}
+
+shareBtn.addEventListener('click', async () => {
+  const selectedIndices = pieceSelected.map((sel, i) => (sel ? i : -1)).filter((i) => i !== -1);
+  if (!selectedIndices.length) {
+    showToast('Sélectionne au moins un morceau à exporter.');
+    return;
+  }
+
+  shareBtn.disabled = true;
+  const originalText = shareBtn.innerHTML;
+  shareBtn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const ext = extFor(currentFormat);
+    const files = await Promise.all(
+      selectedIndices.map(async (origIndex) => {
+        const canvas = currentCanvases[origIndex];
+        const blob = await blobFor(canvas, currentFormat);
+        const name = currentCanvases.length === 1
+          ? `${currentFilename}.${ext}`
+          : `${currentFilename}_part${origIndex + 1}.${ext}`;
+        return new File([blob], name, { type: blob.type });
+      })
+    );
+
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({ files, title: 'Luchiaro.splitt' });
+    } else {
+      for (const file of files) {
+        triggerDownload(file, file.name);
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      showToast('✓ Fichiers téléchargés');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') showToast('Erreur : ' + (err.message || 'action échouée'));
+  } finally {
+    shareBtn.disabled = pieceSelected.every((s) => !s);
+    shareBtn.innerHTML = originalText;
+  }
+});
+
+// ==================== PWA : enregistrement du service worker ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // L'app reste pleinement fonctionnable sans SW (juste pas de mode
+      // hors-ligne / partage entrant) — on ne bloque jamais l'UI pour ça.
+    });
+  });
+}
+
+// ==================== Web Share Target : récupération des images partagées ====================
+const SHARE_DB_NAME = 'luchiaro-share';
+const SHARE_STORE_NAME = 'shared-images';
+
+function openShareDB() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB indisponible'));
+      return;
+    }
+    const request = indexedDB.open(SHARE_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(SHARE_STORE_NAME)) {
+        request.result.createObjectStore(SHARE_STORE_NAME, { autoIncrement: true });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function consumeSharedImages() {
+  let db;
+  try {
+    db = await openShareDB();
+  } catch (err) {
+    return;
+  }
+
+  try {
+    const entries = await new Promise((resolve, reject) => {
+      const tx = db.transaction(SHARE_STORE_NAME, 'readonly');
+      const store = tx.objectStore(SHARE_STORE_NAME);
+      const req = store.getAll();
+      const keyReq = store.getAllKeys();
+      let values, keys;
+      req.onsuccess = () => { values = req.result; if (keys !== undefined) resolve({ values, keys }); };
+      keyReq.onsuccess = () => { keys = keyReq.result; if (values !== undefined) resolve({ values, keys }); };
+      tx.onerror = () => reject(tx.error);
+    });
+
+    if (entries.values && entries.values.length) {
+      const item = entries.values[entries.values.length - 1];
+      const file = new File([item.blob], item.name || 'image-partagee', {
+        type: item.type || item.blob.type || 'image/png'
+      });
+      handleFile(file);
+
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(SHARE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(SHARE_STORE_NAME);
+        entries.keys.forEach((k) => store.delete(k));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+  } catch (err) {
+    // Table vide ou transaction avortée — l'app démarre normalement sur l'écran de dépôt manuel
+  } finally {
+    if (db) db.close();
+  }
+}
+
+window.addEventListener('DOMContentLoaded', consumeSharedImages);
+</script>
+</body>
+</html>
+            
