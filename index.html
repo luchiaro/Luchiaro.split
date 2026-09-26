@@ -213,8 +213,31 @@
   .carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); transition: background .2s, transform .2s; }
   .carousel-dots .dot.active { background: #ffffff; transform: scale(1.35); }
   .carousel-hint { text-align: center; font-size: 0.78rem; color: #7a7b81; margin-top: 12px; font-weight: 500; }
+  .carousel-phone { cursor: pointer; }
 
-  .hint { margin-top: 20px; font-size: 0.82rem; color: #5a5b60; line-height: 1.55; padding: 15px 17px; }
+  /* ---------- Visualiseur plein écran ---------- */
+  .fullscreen-overlay { position: fixed; inset: 0; z-index: 200; background: #000; }
+  .fullscreen-overlay.hidden { display: none; }
+  .fullscreen-close {
+    position: absolute; top: max(16px, env(safe-area-inset-top, 16px)); right: 16px; z-index: 201;
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.15); color: #fff; font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .fullscreen-carousel {
+    display: flex; width: 100%; height: 100%; overflow-x: auto;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .fullscreen-carousel::-webkit-scrollbar { display: none; }
+  .fullscreen-carousel .slide {
+    flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fullscreen-carousel .slide img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .fullscreen-dots { bottom: max(20px, env(safe-area-inset-bottom, 20px)); z-index: 201; }
+  .fullscreen-dots.hidden { display: none; }
   .hidden { display: none !important; }
 
   .spinner {
@@ -422,11 +445,15 @@
     </div>
     <div class="carousel-hint" id="carouselHint">Glisse pour prévisualiser l'effet carrousel Instagram</div>
   </div>
-
-  <p class="glass hint hidden" id="hint"></p>
 </div>
 
 <div class="toast hidden" id="toast"></div>
+
+<div class="fullscreen-overlay hidden" id="fullscreenOverlay">
+  <button class="fullscreen-close" id="fullscreenClose" aria-label="Fermer">✕</button>
+  <div class="fullscreen-carousel" id="fullscreenCarousel"></div>
+  <div class="carousel-dots fullscreen-dots" id="fullscreenDots"></div>
+</div>
 
 <script>
 // ==================== Références DOM ====================
@@ -443,7 +470,6 @@ const customRatioRow = document.getElementById('customRatioRow');
 const customW = document.getElementById('customW');
 const customH = document.getElementById('customH');
 const resetBtn = document.getElementById('resetBtn');
-const hint = document.getElementById('hint');
 
 const downloadAllWrap = document.getElementById('downloadAllWrap');
 const formatSeg = document.getElementById('formatSeg');
@@ -459,6 +485,10 @@ const carousel = document.getElementById('carousel');
 const carouselDots = document.getElementById('carouselDots');
 const carouselHint = document.getElementById('carouselHint');
 const carouselPanelTitle = document.getElementById('carouselPanelTitle');
+const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+const fullscreenClose = document.getElementById('fullscreenClose');
+const fullscreenCarousel = document.getElementById('fullscreenCarousel');
+const fullscreenDots = document.getElementById('fullscreenDots');
 
 const exifSwitchRow = document.getElementById('exifSwitchRow');
 const showExifChk = document.getElementById('showExifChk');
@@ -498,6 +528,25 @@ let exifFieldsEnabled = {};
 let originalIsJpeg = false;
 let originalExifObj = null;
 let originalIccSegments = [];
+
+// Aperçus (miniatures, carrousel, plein écran) : on passe par des blob URLs
+// plutôt que toDataURL — plus rapide sur les grandes images et non bloquant.
+// On garde la liste des URLs actives pour les libérer avant chaque nouveau
+// rendu, sinon elles s'accumulent en mémoire à chaque réglage modifié.
+let activeObjectUrls = [];
+function revokeActiveObjectUrls() {
+  activeObjectUrls.forEach((u) => URL.revokeObjectURL(u));
+  activeObjectUrls = [];
+}
+function canvasToObjectURL(canvas) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      activeObjectUrls.push(url);
+      resolve(url);
+    }, 'image/png');
+  });
+}
 
 function debounce(fn, wait) {
   let t;
@@ -694,7 +743,6 @@ function handleFile(file) {
       dropzone.classList.add('hidden');
       controls.classList.remove('hidden');
       originalWrap.classList.remove('hidden');
-      hint.classList.remove('hidden');
       renderSplits();
     };
     img.src = dataUrl;
@@ -1145,6 +1193,7 @@ function getWorkingCanvas(targetRatio, n) {
 
 function renderSplits() {
   if (!currentImage) return;
+  revokeActiveObjectUrls();
   previewRow.innerHTML = '';
   currentCanvases = [];
 
@@ -1220,7 +1269,7 @@ function renderSplits() {
     }
 
     const imgPrev = document.createElement('img');
-    imgPrev.src = canvas.toDataURL('image/png');
+    canvasToObjectURL(canvas).then((url) => { imgPrev.src = url; });
 
     const dims = document.createElement('div');
     dims.className = 'dims';
@@ -1242,21 +1291,8 @@ function renderSplits() {
   updateSelectAllUI();
   updateShareButtonState();
   renderCarousel();
-
-  let ratioLabel;
-  if (targetRatio === 'original') {
-    ratioLabel = 'sans recadrage';
-  } else {
-    const activeBtn = ratioSeg.querySelector('.active');
-    const label = ratioMode === 'custom' ? `${customW.value}:${customH.value}` : activeBtn.textContent;
-    ratioLabel = `recadré en ${label}`;
-  }
-  if (n === 1) {
-    hint.textContent = `Image finale : ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Export en PNG = zéro perte de qualité.`;
-  } else {
-    hint.textContent = `Chaque morceau fait environ ${Math.round(baseSliceW)}×${H}px, ${ratioLabel}. Poste les morceaux dans l'ordre pour reconstituer l'image d'origine.`;
-  }
 }
+
 
 function updateSelectAllUI() {
   const total = pieceSelected.length;
@@ -1275,6 +1311,8 @@ function updateShareButtonState() {
 function renderCarousel() {
   carousel.innerHTML = '';
   carouselDots.innerHTML = '';
+  fullscreenCarousel.innerHTML = '';
+  fullscreenDots.innerHTML = '';
 
   if (!currentCanvases.length) {
     carouselPanel.classList.add('hidden');
@@ -1291,15 +1329,32 @@ function renderCarousel() {
     const slide = document.createElement('div');
     slide.className = 'slide';
     const img = document.createElement('img');
-    img.src = canvas.toDataURL('image/png');
     img.alt = single ? 'Aperçu' : `Morceau ${i + 1}`;
     slide.appendChild(img);
     carousel.appendChild(slide);
+
+    // Même image, réutilisée pour le visualiseur plein écran (une seule
+    // génération de blob par morceau, pas de duplication de travail).
+    const fsSlide = document.createElement('div');
+    fsSlide.className = 'slide';
+    const fsImg = document.createElement('img');
+    fsImg.alt = img.alt;
+    fsSlide.appendChild(fsImg);
+    fullscreenCarousel.appendChild(fsSlide);
+
+    canvasToObjectURL(canvas).then((url) => {
+      img.src = url;
+      fsImg.src = url;
+    });
 
     if (!single) {
       const dot = document.createElement('div');
       dot.className = 'dot' + (i === 0 ? ' active' : '');
       carouselDots.appendChild(dot);
+
+      const fsDot = document.createElement('div');
+      fsDot.className = 'dot' + (i === 0 ? ' active' : '');
+      fullscreenDots.appendChild(fsDot);
     }
   });
 
@@ -1307,8 +1362,10 @@ function renderCarousel() {
   carousel.style.overflowX = single ? 'hidden' : 'auto';
   carouselPanelTitle.textContent = single ? 'Aperçu de l\u2019export' : 'Simulation carrousel (swipe)';
   carouselHint.textContent = single
-    ? 'Image unique — pas de découpe'
-    : 'Glisse pour prévisualiser l\u2019effet carrousel Instagram';
+    ? 'Touche l\u2019aperçu pour l\u2019afficher en plein écran'
+    : 'Glisse pour prévisualiser l\u2019effet carrousel Instagram — touche l\u2019aperçu pour l\u2019afficher en plein écran';
+
+  fullscreenDots.classList.toggle('hidden', single);
 
   if (!single) {
     const dots = [...carouselDots.children];
@@ -1316,10 +1373,37 @@ function renderCarousel() {
       const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
       dots.forEach((d, i) => d.classList.toggle('active', i === idx));
     };
+    const fsDots = [...fullscreenDots.children];
+    fullscreenCarousel.onscroll = () => {
+      const idx = Math.round(fullscreenCarousel.scrollLeft / fullscreenCarousel.clientWidth);
+      fsDots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    };
   } else {
     carousel.onscroll = null;
+    fullscreenCarousel.onscroll = null;
   }
 }
+
+// ==================== Visualiseur plein écran ====================
+function openFullscreenCarousel() {
+  if (!currentCanvases.length) return;
+  const idx = carousel.clientWidth ? Math.round(carousel.scrollLeft / carousel.clientWidth) : 0;
+  fullscreenOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  // Le layout n'est prêt qu'après affichage — on aligne le scroll juste après.
+  requestAnimationFrame(() => {
+    fullscreenCarousel.scrollLeft = idx * fullscreenCarousel.clientWidth;
+  });
+}
+function closeFullscreenCarousel() {
+  fullscreenOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+carouselPhone.addEventListener('click', openFullscreenCarousel);
+fullscreenClose.addEventListener('click', closeFullscreenCarousel);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !fullscreenOverlay.classList.contains('hidden')) closeFullscreenCarousel();
+});
 
 // ==================== Export / téléchargement ====================
 function extFor(format) {
@@ -1476,4 +1560,3 @@ window.addEventListener('DOMContentLoaded', consumeSharedImages);
 </script>
 </body>
 </html>
-            
